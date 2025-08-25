@@ -1,0 +1,7 @@
+cpanfile
+cpanm
+cpanminus
+installdeps
+Mlocal
+shogo
+subtest

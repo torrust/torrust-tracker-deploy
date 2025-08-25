@@ -1,0 +1,13 @@
+# Carmel dependency management
+local/
+.carmel/
+cpanfile.snapshot
+
+# Editor temporary files
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
