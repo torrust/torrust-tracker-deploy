@@ -1,3 +1,5 @@
+[![Testing](https://github.com/torrust/torrust-tracker-deploy/actions/workflows/testing.yml/badge.svg)](https://github.com/torrust/torrust-tracker-deploy/actions/workflows/testing.yml)
+
 # Torrust Tracker Deployment Tool
 
 A modern Perl console application for deploying Torrust Tracker to Hetzner Cloud using Packer,
