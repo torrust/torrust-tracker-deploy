@@ -91,4 +91,5 @@ ALWAYS run the linting suite before committing any changes:
 
 ```bash
 markdownlint "**/*.md"
+yamllint -c .yamllint-ci.yml .
 ```

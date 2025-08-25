@@ -18,11 +18,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
+          sudo apt-get install -y yamllint
           sudo npm install -g markdownlint-cli
 
-      - name: Run linting
+      - name: Run markdown linting
         run: markdownlint "**/*.md"
 
+      - name: Run yaml linting
+        run: yamllint -c .yamllint-ci.yml .
   test:
     runs-on: ubuntu-latest
     name: Test
