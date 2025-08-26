@@ -30,6 +30,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Test
+    env:
+      PERL5LIB: ~/perl5/lib/perl5
+      PERL_LOCAL_LIB_ROOT: ~/perl5
+      PERL_MB_OPT: --install_base ~/perl5
+      PERL_MM_OPT: INSTALL_BASE=~/perl5
 
     steps:
       - name: Checkout code
@@ -47,24 +52,28 @@ jobs:
           export PATH="$HOME/perl5/bin:$PATH"
           echo "$HOME/perl5/bin" >> $GITHUB_PATH
 
-          # Setup local::lib
+          # Setup local::lib environment (will be inherited by subsequent steps)
           cpanm --local-lib=~/perl5 local::lib
           eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+
+          # Export environment variables for subsequent steps
+          echo "PERL5LIB=$PERL5LIB" >> $GITHUB_ENV
+          echo "PERL_LOCAL_LIB_ROOT=$PERL_LOCAL_LIB_ROOT" >> $GITHUB_ENV
+          echo "PERL_MB_OPT=$PERL_MB_OPT" >> $GITHUB_ENV
+          echo "PERL_MM_OPT=$PERL_MM_OPT" >> $GITHUB_ENV
 
           # Install Carmel
           cpanm Carmel
 
       - name: Install project dependencies
-        run: |
-          eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
-          carmel install
+        run: carmel install
 
-      - name: Run unit tests
+      - name: Run tests
         run: |
-          eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
-          ./script/test-unit
-
-      - name: Run integration tests
-        run: |
-          eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
-          ./script/test-integration
+          # Note: E2E tests are excluded from CI as they require virtualization (KVM/QEMU)
+          # which is not available in GitHub Actions runners. To run E2E tests locally
+          # on your development machine with virtualization support, use:
+          # ./script/test e2e
+          # or
+          # ./script/test all
+          ./script/test unit integration

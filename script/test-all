@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Run all tests (unit, integration, and e2e)
-exec carmel exec -- prove -l t/unit/ t/integration/ t/e2e/ --ext .t --recurse

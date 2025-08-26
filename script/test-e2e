@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Run E2E tests only
-exec carmel exec -- prove -l t/e2e/ --ext .t --recurse

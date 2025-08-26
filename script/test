@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Unified test script for running different test suites
+# Usage: ./script/test [e2e] [integration] [unit] [all]
+# Note: E2E tests require virtualization (KVM/QEMU) to be available on the host
+# Examples:
+#   ./script/test all                    # Run all tests
+#   ./script/test unit integration       # Run unit and integration tests only
+#   ./script/test e2e                    # Run e2e tests only (requires virtualization)
+
+set -e
+
+# Default to no tests selected
+run_unit=false
+run_integration=false
+run_e2e=false
+
+# If no arguments provided, show usage
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 [e2e] [integration] [unit] [all]"
+    echo ""
+    echo "Note: E2E tests require virtualization (KVM/QEMU) to be available on the host"
+    echo ""
+    echo "Examples:"
+    echo "  $0 all                    # Run all tests"
+    echo "  $0 unit integration       # Run unit and integration tests only"
+    echo "  $0 e2e                    # Run e2e tests only (requires virtualization)"
+    exit 1
+fi
+
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        all)
+            run_unit=true
+            run_integration=true
+            run_e2e=true
+            break  # If 'all' is specified, no need to check other args
+            ;;
+        unit)
+            run_unit=true
+            ;;
+        integration)
+            run_integration=true
+            ;;
+        e2e)
+            run_e2e=true
+            ;;
+        *)
+            echo "Error: Unknown argument '$arg'"
+            echo "Valid arguments are: e2e, integration, unit, all"
+            exit 1
+            ;;
+    esac
+done
+
+# Build test directories array
+test_dirs=()
+
+if [ "$run_unit" = true ]; then
+    test_dirs+=("t/unit/")
+fi
+
+if [ "$run_integration" = true ]; then
+    test_dirs+=("t/integration/")
+fi
+
+if [ "$run_e2e" = true ]; then
+    test_dirs+=("t/e2e/")
+fi
+
+# Run tests if any directories are selected
+if [ ${#test_dirs[@]} -gt 0 ]; then
+    echo "Running tests in: ${test_dirs[*]}"
+    exec carmel exec -- prove -l "${test_dirs[@]}" --ext .t --recurse
+else
+    echo "No test suites selected"
+    exit 1
+fi

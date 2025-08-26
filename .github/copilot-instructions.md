@@ -144,8 +144,10 @@ Follow [perlstyle](https://perldoc.perl.org/5.42.0/perlstyle) conventions for co
 ALWAYS run the tests suite before committing any changes:
 
 ```bash
-carmel exec -- prove -l t/
+./script/test unit integration
 ```
+
+Note: E2E tests are excluded from pre-commit checks as they are slow and require virtualization. Run them manually when needed with `./script/test e2e` or `./script/test all`.
 
 ALWAYS run the linting suite before committing any changes:
 

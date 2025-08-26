@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Run integration tests only
-exec carmel exec -- prove -l t/integration/ --ext .t --recurse
