@@ -109,51 +109,91 @@ sub _is_connection_expired {
 sub _is_connection_healthy {
     my ($self) = @_;
     
+    return 0 unless $self->_basic_connection_checks_pass();
+    return 1 unless $self->_should_perform_health_check();
+    
+    return $self->_perform_and_cache_health_check();
+}
+
+sub _basic_connection_checks_pass {
+    my ($self) = @_;
+    
     return 0 unless $self->_has_connection && $self->_authenticated;
     return 0 if $self->_is_connection_expired;
     
-    # Skip health check if disabled or recently checked
-    return 1 unless $self->health_check_enabled;
+    return 1;
+}
+
+sub _should_perform_health_check {
+    my ($self) = @_;
     
-    if ($self->_last_health_check) {
-        my $time_since_check = time() - $self->_last_health_check;
-        return 1 if $time_since_check < 30;  # Skip check if done within 30 seconds
-    }
+    return 0 unless $self->health_check_enabled;
+    return 0 if $self->_is_recent_health_check_cached();
     
-    # Perform actual health check with a simple command
-    my $health_result = eval {
+    return 1;
+}
+
+sub _is_recent_health_check_cached {
+    my ($self) = @_;
+    
+    return 0 unless $self->_last_health_check;
+    
+    my $time_since_check = time() - $self->_last_health_check;
+    return $time_since_check < 30;  # Cache for 30 seconds
+}
+
+sub _perform_and_cache_health_check {
+    my ($self) = @_;
+    
+    my $health_result = $self->_execute_health_check_command();
+    $self->_last_health_check(time());
+    
+    return $health_result;
+}
+
+sub _execute_health_check_command {
+    my ($self) = @_;
+    
+    my $result = eval {
         my $ssh2 = $self->_ssh2;
         my $channel = $ssh2->channel();
         return 0 unless $channel;
         
-        # Use a simple echo command as health check
-        my $test_command = 'echo "health_check"';
-        return 0 unless $channel->exec($test_command);
-        
-        # Try to read response
-        my $output = '';
-        my $timeout = time() + 5;  # 5 second timeout for health check
-        
-        while (time() < $timeout) {
-            my $buffer;
-            my $bytes = $channel->read($buffer, 1024);
-            last if $bytes <= 0;
-            $output .= $buffer;
-            last if $output =~ /health_check/;
-        }
-        
-        $channel->close();
-        return $output =~ /health_check/;
+        return $self->_run_echo_health_check($channel);
     };
     
-    $self->_last_health_check(time());
+    return 0 if $@ || !$result;
+    return 1;
+}
+
+sub _run_echo_health_check {
+    my ($self, $channel) = @_;
     
-    if ($@ || !$health_result) {
-        # Health check failed, connection is unhealthy
-        return 0;
+    # Use a simple echo command as health check
+    my $test_command = 'echo "health_check"';
+    return 0 unless $channel->exec($test_command);
+    
+    my $output = $self->_read_health_check_output($channel);
+    $channel->close();
+    
+    return $output =~ /health_check/;
+}
+
+sub _read_health_check_output {
+    my ($self, $channel) = @_;
+    
+    my $output = '';
+    my $timeout = time() + 5;  # 5 second timeout for health check
+    
+    while (time() < $timeout) {
+        my $buffer;
+        my $bytes = $channel->read($buffer, 1024);
+        last if $bytes <= 0;
+        $output .= $buffer;
+        last if $output =~ /health_check/;
     }
     
-    return 1;
+    return $output;
 }
 
 sub test_password_connection {
@@ -216,64 +256,98 @@ sub _execute_command_with_retry {
     my ($self, $command, $max_retries) = @_;
     
     for my $attempt (1..$max_retries) {
-        # Ensure we have an authenticated connection
-        unless ($self->_ensure_authenticated()) {
-            return {
-                output => "Authentication failed",
-                success => 0,
-                exit_code => 255,
-            };
-        }
+        my $result = $self->_attempt_command_execution($command);
         
-        my $result = eval {
-            my $ssh2 = $self->_ssh2;
-            my $channel = $ssh2->channel();
-            
-            unless ($channel) {
-                croak "Failed to create channel: " . ($ssh2->error || 'Unknown error');
-            }
-            
-            # Execute command
-            unless ($channel->exec($command)) {
-                croak "Failed to execute command '$command': " . ($ssh2->error || 'Unknown error');
-            }
-            
-            # Read output with timeout
-            my $output = $self->_read_channel_output($channel);
-            
-            # Wait for command completion and get exit status
-            $channel->wait_closed();
-            my $exit_code = $channel->exit_status();
-            $exit_code = 0 unless defined $exit_code;
-            
-            return {
-                output => $output,
-                success => $exit_code == 0,
-                exit_code => $exit_code,
-            };
-        };
-        
-        # If command succeeded, return result
-        if (!$@ && $result) {
-            return $result;
-        }
+        # If command succeeded (result exists and is defined), return it
+        return $result if $result;
         
         # Command failed - check if we should retry
-        if ($attempt < $max_retries && $self->auto_reconnect) {
-            # Clear connection and try again
-            $self->_clear_connection();
-            $self->_clear_connection_timestamp();
-            $self->_authenticated(0);
-            next;
-        }
-        
-        # No more retries or auto_reconnect disabled
-        return {
-            output => "SSH command execution failed: $@",
-            success => 0,
-            exit_code => 255,
-        };
+        last unless $self->_should_retry_command($attempt, $max_retries);
+        $self->_prepare_for_retry();
     }
+    
+    # No more retries or auto_reconnect disabled
+    return $self->_create_failure_result("SSH command execution failed: " . ($@ || "Unknown error"));
+}
+
+sub _attempt_command_execution {
+    my ($self, $command) = @_;
+    
+    # Ensure we have an authenticated connection
+    return $self->_create_failure_result("Authentication failed") 
+        unless $self->_ensure_authenticated();
+    
+    my $result = eval { $self->_execute_single_command($command) };
+    
+    # Return result if successful (even if command failed with non-zero exit)
+    return $result if !$@ && $result;
+    
+    # eval failed, return undef to trigger retry logic
+    return undef;
+}
+
+sub _execute_single_command {
+    my ($self, $command) = @_;
+    
+    my $ssh2 = $self->_ssh2;
+    my $channel = $self->_create_command_channel($ssh2, $command);
+    
+    my $output = $self->_read_channel_output($channel);
+    my $exit_code = $self->_get_command_exit_code($channel);
+    
+    return {
+        output => $output,
+        success => $exit_code == 0,
+        exit_code => $exit_code,
+    };
+}
+
+sub _create_command_channel {
+    my ($self, $ssh2, $command) = @_;
+    
+    my $channel = $ssh2->channel();
+    croak "Failed to create channel: " . ($ssh2->error || 'Unknown error') 
+        unless $channel;
+    
+    croak "Failed to execute command '$command': " . ($ssh2->error || 'Unknown error')
+        unless $channel->exec($command);
+    
+    return $channel;
+}
+
+sub _get_command_exit_code {
+    my ($self, $channel) = @_;
+    
+    $channel->wait_closed();
+    my $exit_code = $channel->exit_status();
+    return defined $exit_code ? $exit_code : 0;
+}
+
+sub _should_retry_command {
+    my ($self, $attempt, $max_retries) = @_;
+    
+    return 0 if $attempt >= $max_retries;
+    return 0 unless $self->auto_reconnect;
+    
+    return 1;
+}
+
+sub _prepare_for_retry {
+    my ($self) = @_;
+    
+    $self->_clear_connection();
+    $self->_clear_connection_timestamp();
+    $self->_authenticated(0);
+}
+
+sub _create_failure_result {
+    my ($self, $error_message) = @_;
+    
+    return {
+        output => $error_message,
+        success => 0,
+        exit_code => 255,
+    };
 }
 
 sub execute_command_with_sudo {
@@ -316,17 +390,24 @@ sub force_reconnect {
 sub _ensure_authenticated {
     my ($self) = @_;
     
-    # Check if existing connection is healthy
-    if ($self->_is_connection_healthy()) {
-        return 1;
-    }
+    return 1 if $self->_is_connection_healthy();
     
-    # Connection is unhealthy or expired, clear it and reconnect
+    $self->_reset_unhealthy_connection();
+    return $self->_attempt_authentication();
+}
+
+sub _reset_unhealthy_connection {
+    my ($self) = @_;
+    
     if ($self->_has_connection) {
         $self->_clear_connection();
         $self->_clear_connection_timestamp();
         $self->_authenticated(0);
     }
+}
+
+sub _attempt_authentication {
+    my ($self) = @_;
     
     # Try password authentication first
     return 1 if $self->test_password_connection();
@@ -356,38 +437,69 @@ sub _find_public_key_path {
 sub _read_channel_output {
     my ($self, $channel) = @_;
     
-    my $output = '';
-    my $buffer;
+    $self->_setup_non_blocking_read($channel);
+    my $output = $self->_read_with_timeout($channel);
+    $output .= $self->_read_remaining_data($channel);
     
-    # Set up non-blocking read with timeout
+    return $output;
+}
+
+sub _setup_non_blocking_read {
+    my ($self, $channel) = @_;
+    
     $channel->blocking(0);
+}
+
+sub _read_with_timeout {
+    my ($self, $channel) = @_;
     
+    my $output = '';
     my $start_time = time();
     my $timeout = $self->command_timeout;
     
     while (time() - $start_time < $timeout) {
-        my $bytes_read = $channel->read($buffer, 4096);
+        my $buffer = $self->_try_read_chunk($channel);
         
-        if (defined $bytes_read && $bytes_read > 0) {
+        if (defined $buffer && length($buffer) > 0) {
             $output .= $buffer;
             next;
         }
         
-        # Check if channel is closed
         last if $channel->eof();
-        
-        # Small sleep to prevent busy waiting
-        select(undef, undef, undef, 0.1);
-    }
-    
-    # Final blocking read to get any remaining data
-    $channel->blocking(1);
-    while (my $bytes_read = $channel->read($buffer, 4096)) {
-        last unless defined $bytes_read && $bytes_read > 0;
-        $output .= $buffer;
+        $self->_small_delay_to_prevent_busy_waiting();
     }
     
     return $output;
+}
+
+sub _try_read_chunk {
+    my ($self, $channel) = @_;
+    
+    my $buffer;
+    my $bytes_read = $channel->read($buffer, 4096);
+    
+    return (defined $bytes_read && $bytes_read > 0) ? $buffer : undef;
+}
+
+sub _small_delay_to_prevent_busy_waiting {
+    my ($self) = @_;
+    
+    select(undef, undef, undef, 0.1);
+}
+
+sub _read_remaining_data {
+    my ($self, $channel) = @_;
+    
+    my $remaining_output = '';
+    
+    # Final blocking read to get any remaining data
+    $channel->blocking(1);
+    while (my $bytes_read = $channel->read(my $buffer, 4096)) {
+        last unless defined $bytes_read && $bytes_read > 0;
+        $remaining_output .= $buffer;
+    }
+    
+    return $remaining_output;
 }
 
 # Cleanup on destruction
