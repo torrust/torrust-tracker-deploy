@@ -1,6 +1,6 @@
 package TorrustDeploy::App;
 
-use v5.40;
+use v5.38;
 
 # App::Cmd framework setup - automatically discovers commands in TorrustDeploy::App::Command::*
 # Commands are found by convention: each .pm file in lib/TorrustDeploy/App/Command/ 

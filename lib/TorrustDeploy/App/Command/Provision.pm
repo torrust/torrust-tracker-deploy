@@ -1,6 +1,6 @@
 package TorrustDeploy::App::Command::Provision;
 
-use v5.40;
+use v5.38;
 
 use TorrustDeploy::App -command;
 use TorrustDeploy::Provision::OpenTofu;

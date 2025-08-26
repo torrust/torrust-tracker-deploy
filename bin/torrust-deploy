@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 # Set up Perl environment with modern features (includes strict and warnings)
-use v5.40;
+use v5.38;
 
 # Configure module loading
 use FindBin qw($Bin);        # Import FindBin module and get $Bin variable containing this script's directory

@@ -5,6 +5,26 @@
 A modern Perl console application for deploying Torrust Tracker to Hetzner Cloud using Packer,
 Terraform, and Ansible.
 
+## Perl Version Requirement
+
+This project requires **Perl v5.38** or higher. We chose v5.38 specifically because:
+
+- **Modern Perl features**: Enables `strict` and `warnings` by default without explicit `use` statements
+- **GitHub Actions compatibility**: v5.38 is the default Perl version in Ubuntu 24.04 LTS  
+  (GitHub Actions runners)
+- **No additional CI setup**: Avoids the overhead of installing newer Perl versions in CI, which  
+  can be slow
+- **Modern enough**: Provides all the modern Perl features we need for this application
+
+You can check your Perl version with:
+
+```bash
+perl -v
+```
+
+If you need to install a newer Perl version, consider using [perlbrew](https://perlbrew.pl/) for  
+local development.
+
 ## Installation
 
 Install cpanminus:
