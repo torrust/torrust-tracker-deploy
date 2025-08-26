@@ -58,6 +58,9 @@ sub execute {
     # Verify SSH key authentication after cloud-init completes
     $self->_verify_ssh_key_auth($vm_ip);
     
+    # Show final summary
+    $self->_show_final_summary($vm_ip);
+    
     say "Provisioning completed successfully!";
     say "VM is ready at IP: $vm_ip";
 }
@@ -151,84 +154,131 @@ sub _wait_for_cloud_init {
     say "Waiting for cloud-init to complete...";
     say "This may take several minutes while packages are installed and configured.";
     
-    # Monitor cloud-init progress using password authentication
-    $self->_monitor_cloud_init($vm_ip);
-}
-
-sub _monitor_cloud_init {
-    my ($self, $vm_ip) = @_;
-    
-    say "Monitoring cloud-init progress...";
-    say "Connecting via SSH with password authentication to monitor setup progress...";
-    
     my $completion_file = "/var/lib/cloud/torrust-setup-complete";
-    my $last_line_count = 0;
-    my $max_attempts = 300; # 25 minutes with 5-second intervals
+    my $max_attempts = 360; # 30 minutes with 5-second intervals
     my $attempt = 0;
+    my $ssh_connected = 0;
+    my $cloud_init_success = 0;
     
+    # Step 1: Wait until SSH connection is available (for password auth to check cloud-init)
+    say "⏳ Waiting for SSH service to become available...";
+    
+    while ($attempt < $max_attempts && !$ssh_connected) {
+        $attempt++;
+        
+        my $ssh_test = system("timeout 5 sshpass -p 'torrust123' ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'echo \"SSH connected\"' >/dev/null 2>&1");
+        if ($ssh_test == 0) {
+            $ssh_connected = 1;
+            say "✅ SSH password connection established to $vm_ip";
+        } else {
+            if ($attempt % 6 == 0) { # Every 30 seconds
+                say "  [Waiting for SSH connection... ${attempt}0s elapsed]";
+            }
+            sleep(5);
+        }
+    }
+    
+    if (!$ssh_connected) {
+        say "❌ Failed to establish SSH connection to $vm_ip after " . ($max_attempts * 5 / 60) . " minutes";
+        $self->_print_cloud_init_logs($vm_ip);
+        die "SSH connection failed";
+    }
+    
+    # Step 2: Wait until cloud-init completion marker is created
+    say "⏳ Waiting for cloud-init to complete...";
+    
+    $attempt = 0;
     while ($attempt < $max_attempts) {
         $attempt++;
         
-        # Check if completion file exists
         my $check_result = system("timeout 10 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'test -f $completion_file' >/dev/null 2>&1");
         
         if ($check_result == 0) {
-            say "\n✅ Cloud-init setup completed successfully!";
+            say "✅ Cloud-init setup completed successfully!";
             
-            # Show final completion message
+            # Show completion message
             my $completion_content = `timeout 10 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'cat $completion_file' 2>/dev/null`;
             if ($completion_content) {
                 chomp $completion_content;
-                say "Completion marker: $completion_content";
+                say "📅 Completion marker: $completion_content";
             }
-            return;
+            $cloud_init_success = 1;
+            last;
         }
         
-        # Get latest cloud-init log output
-        my $log_output = `timeout 10 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'tail -n 20 /var/log/cloud-init-output.log 2>/dev/null || echo "Log not available yet"' 2>/dev/null`;
-        
-        if ($log_output && $log_output !~ /^Log not available yet/) {
-            # Count lines to show only new content
-            my @lines = split /\n/, $log_output;
-            my $current_line_count = scalar @lines;
-            
-            if ($current_line_count > $last_line_count) {
-                # Show new lines
-                my @new_lines = @lines[($last_line_count)..($current_line_count-1)];
-                for my $line (@new_lines) {
-                    say "  $line" if $line =~ /\S/; # Only non-empty lines
-                }
-                $last_line_count = $current_line_count;
-            }
-        }
-        
-        # Show progress indicator
-        if ($attempt % 12 == 0) { # Every minute
-            say "  [Still waiting for cloud-init... ${attempt}s elapsed]";
+        # Show progress indicator every 2 minutes
+        if ($attempt % 24 == 0) {
+            my $elapsed_minutes = int($attempt * 5 / 60);
+            say "  [Cloud-init still running... ${elapsed_minutes} minutes elapsed]";
         }
         
         sleep(5);
     }
     
-    die "\nTimeout waiting for cloud-init to complete on $vm_ip";
+    if (!$cloud_init_success) {
+        say "❌ Timeout waiting for cloud-init to complete on $vm_ip after " . ($max_attempts * 5 / 60) . " minutes";
+        $self->_print_cloud_init_logs($vm_ip);
+        die "Cloud-init timeout";
+    }
+}
+
+sub _show_final_summary {
+    my ($self, $vm_ip) = @_;
+    
+    say "📦 Final system summary:";
+    
+    my $docker_version = `timeout 10 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'docker --version 2>/dev/null || echo "Docker not available"' 2>/dev/null`;
+    chomp $docker_version if $docker_version;
+    say "   Docker: $docker_version" if $docker_version;
+    
+    my $ufw_status = `timeout 10 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'ufw status 2>/dev/null | head -1 || echo "UFW not available"' 2>/dev/null`;
+    chomp $ufw_status if $ufw_status;
+    say "   Firewall: $ufw_status" if $ufw_status;
+
+    say "Provisioning completed successfully!";
+    say "VM is ready at IP: $vm_ip";
+}
+
+sub _print_cloud_init_logs {
+    my ($self, $vm_ip) = @_;
+    
+    say "📄 Cloud-init logs (for debugging):";
+    
+    # Print cloud-init-output.log
+    say "=== /var/log/cloud-init-output.log ===";
+    my $output_log = `timeout 30 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'sudo cat /var/log/cloud-init-output.log 2>/dev/null || echo "Log file not available"' 2>/dev/null`;
+    if ($output_log && $output_log !~ /^Log file not available/) {
+        print $output_log;
+    } else {
+        say "Cloud-init output log not available";
+    }
+    
+    say "=== /var/log/cloud-init.log ===";
+    my $main_log = `timeout 30 sshpass -p 'torrust123' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null torrust\@$vm_ip 'sudo cat /var/log/cloud-init.log 2>/dev/null || echo "Log file not available"' 2>/dev/null`;
+    if ($main_log && $main_log !~ /^Log file not available/) {
+        print $main_log;
+    } else {
+        say "Cloud-init main log not available";
+    }
 }
 
 sub _verify_ssh_key_auth {
     my ($self, $vm_ip) = @_;
     
-    say "\nVerifying SSH key authentication...";
+    say "🔑 Checking SSH key authentication...";
     
     my $ssh_key_path = "$ENV{HOME}/.ssh/testing_rsa";
     
     # Test SSH key authentication
-    my $result = system("timeout 10 ssh -i '$ssh_key_path' -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no torrust\@$vm_ip 'echo \"SSH key authentication successful\"' 2>/dev/null");
+    my $result = system("timeout 10 ssh -i '$ssh_key_path' -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no torrust\@$vm_ip 'echo \"SSH key authentication successful\"' >/dev/null 2>&1");
     
     if ($result == 0) {
         say "✅ SSH key authentication is working correctly!";
         say "You can now connect using: ssh -i ~/.ssh/testing_rsa torrust\@$vm_ip";
     } else {
-        say "⚠️  SSH key authentication failed. You may need to use password authentication.";
-        say "Try: ssh torrust\@$vm_ip (password: torrust123)";
+        say "❌ SSH key authentication failed";
+        $self->_print_cloud_init_logs($vm_ip);
+        die "SSH key authentication failed";
     }
 }
 
