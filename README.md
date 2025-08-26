@@ -165,17 +165,35 @@ The project includes two types of tests:
 Run unit tests that don't require virtualization:
 
 ```bash
-./script/test-unit
+./script/test unit
 ```
 
 These tests can run in CI environments and test individual components in isolation.
+
+### Integration Tests
+
+Run integration tests that require multiple components to work together:
+
+```bash
+./script/test integration
+```
+
+It does not require any special setup and can be run on any machine with the necessary dependencies installed.
+
+### Container Tests
+
+Run tests that require Docker:
+
+```bash
+./script/test container
+```
 
 ### E2E Tests
 
 Run end-to-end tests that require local virtualization support:
 
 ```bash
-./script/test-e2e
+./script/test e2e
 ```
 
 **Requirements for E2E tests:**

@@ -83,4 +83,4 @@ jobs:
           # ./script/test e2e
           # or
           # ./script/test all
-          ./script/test unit integration
+          ./script/test unit integration container

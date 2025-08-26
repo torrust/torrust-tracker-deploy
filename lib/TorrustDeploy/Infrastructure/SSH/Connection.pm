@@ -1,6 +1,6 @@
 package TorrustDeploy::Infrastructure::SSH::Connection;
 
-use v5.40;
+use v5.38;
 use Moo;
 use Net::SSH2;
 use Carp qw(croak);

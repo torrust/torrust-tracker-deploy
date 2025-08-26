@@ -10,8 +10,7 @@ Follow [perlstyle](https://perldoc.perl.org/5.42.0/perlstyle) conventions for co
 
 #### Core Requirements
 
-- **Always use strict and warnings**: `use strict; use warnings;` or `use v5.36;` (enables both)
-- **Modern Perl**: Use `use v5.40;` or higher for modern features (enables strict, warnings, and more)
+- **Modern Perl**: Use `use v5.38;` for modern features (enables strict, warnings, and more)
 
 #### Naming Conventions
 
@@ -144,7 +143,7 @@ Follow [perlstyle](https://perldoc.perl.org/5.42.0/perlstyle) conventions for co
 ALWAYS run the tests suite before committing any changes:
 
 ```bash
-./script/test unit integration
+./script/test unit integration container
 ```
 
 Note: E2E tests are excluded from pre-commit checks as they are slow and require virtualization. Run them manually when needed with `./script/test e2e` or `./script/test all`.

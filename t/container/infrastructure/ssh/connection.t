@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-use v5.40;
+use v5.38;
 use Test2::V0;
 use File::Spec;
 use Cwd qw(getcwd);
@@ -13,7 +13,7 @@ my $SSH_HOST = 'localhost';
 my $SSH_PORT = 2222;
 my $SSH_USER = 'testuser';
 my $SSH_PASS = 'testpass123';
-my $TEST_KEY_PATH = File::Spec->catfile(getcwd(), 't', 'e2e', 'fixtures', 'test_key');
+my $TEST_KEY_PATH = File::Spec->catfile(getcwd(), 't', 'container', 'fixtures', 'test_key');
 
 # Skip tests if Docker is not available
 sub docker_available {
@@ -29,7 +29,7 @@ plan skip_all => 'Docker Compose not available' unless docker_compose_available(
 
 # Test environment setup and teardown
 sub start_ssh_server {
-    my $fixtures_dir = File::Spec->catdir(getcwd(), 't', 'e2e', 'fixtures');
+    my $fixtures_dir = File::Spec->catdir(getcwd(), 't', 'container', 'fixtures');
     
     # Stop any existing container
     system("cd '$fixtures_dir' && docker compose down >/dev/null 2>&1");
@@ -61,7 +61,7 @@ sub start_ssh_server {
 }
 
 sub stop_ssh_server {
-    my $fixtures_dir = File::Spec->catdir(getcwd(), 't', 'e2e', 'fixtures');
+    my $fixtures_dir = File::Spec->catdir(getcwd(), 't', 'container', 'fixtures');
     system("cd '$fixtures_dir' && docker compose down >/dev/null 2>&1");
 }
 
@@ -71,7 +71,7 @@ start_ssh_server();
 # Ensure cleanup happens even if tests fail
 END { stop_ssh_server(); }
 
-subtest 'E2E SSH Connection Tests' => sub {
+subtest 'Container SSH Connection Tests' => sub {
     subtest 'Connection and Authentication' => sub {
         my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
             host => "$SSH_HOST:$SSH_PORT",
