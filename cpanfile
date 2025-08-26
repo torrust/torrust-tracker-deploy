@@ -7,6 +7,7 @@ requires 'Path::Tiny';
 on 'test' => sub {
     requires 'Test2::Suite';
     requires 'Test::MockModule';
+    requires 'Test::Exception';
 };
 
 on 'develop' => sub {

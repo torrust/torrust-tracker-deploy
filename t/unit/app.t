@@ -1,6 +1,6 @@
 use Test2::V0;
 use FindBin qw($Bin);
-use lib "$Bin/../lib";
+use lib "$Bin/../../lib";
 
 use TorrustDeploy::App;
 

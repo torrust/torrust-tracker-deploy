@@ -1,6 +1,6 @@
 use Test2::V0;
 use FindBin qw($Bin);
-use lib "$Bin/../../lib";
+use lib "$Bin/../../../lib";
 use Path::Tiny qw(path);
 use File::Temp qw(tempdir);
 
@@ -30,7 +30,7 @@ subtest 'Provision command is discoverable by app' => sub {
 };
 
 subtest 'Template files exist and are readable' => sub {
-    my $project_root = path($Bin)->parent->parent;
+    my $project_root = path($Bin)->parent->parent->parent;
     my $templates_dir = $project_root->child('templates/provision');
     
     ok($templates_dir->exists, 'Templates/provision directory exists');
@@ -49,7 +49,7 @@ subtest 'Template files exist and are readable' => sub {
 };
 
 subtest 'Template files have expected content' => sub {
-    my $project_root = path($Bin)->parent->parent;
+    my $project_root = path($Bin)->parent->parent->parent;
     my $templates_dir = $project_root->child('templates/provision');
     
     my $main_tf_content = $templates_dir->child('tofu/providers/libvirt/main.tf')->slurp_utf8;
@@ -76,7 +76,7 @@ subtest 'Provision command template copying functionality' => sub {
     });
     
     # Test the _copy_templates method directly
-    my $project_root = path($Bin)->parent->parent;
+    my $project_root = path($Bin)->parent->parent->parent;
     my $templates_dir = $project_root->child('templates/provision');
     
     # Test that template directory exists

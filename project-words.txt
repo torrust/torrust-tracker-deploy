@@ -1,6 +1,7 @@
 autoport
 buildx
 cdrom
+chdir
 cloudinit
 commoninit
 containerd
@@ -10,6 +11,7 @@ cpanminus
 dialout
 dmacvicar
 dpkg
+Ilib
 installdeps
 keyrings
 libvirtd
@@ -30,6 +32,7 @@ shogo
 somaxconn
 sshpass
 subtest
+tfstate
 usermod
 vcpu
 virsh

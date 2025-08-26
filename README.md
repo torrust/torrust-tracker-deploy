@@ -111,8 +111,39 @@ cd build/tofu && tofu output
 
 ## Testing
 
-Run the test suite:
+The project includes two types of tests:
+
+### Unit Tests
+
+Run unit tests that don't require virtualization:
 
 ```bash
-carmel exec -- prove -l t/
+./script/test-unit
 ```
+
+These tests can run in CI environments and test individual components in isolation.
+
+### E2E Tests
+
+Run end-to-end tests that require local virtualization support:
+
+```bash
+./script/test-e2e
+```
+
+**Requirements for E2E tests:**
+
+- Local machine with KVM/libvirt support
+- OpenTofu installed
+- Required system tools: `qemu-system-x86_64`, `sshpass`
+- Cannot run in CI environments
+
+### All Tests
+
+Run both unit and E2E tests:
+
+```bash
+./script/test-all
+```
+
+E2E tests will be automatically skipped in CI environments or when virtualization tools are not available.

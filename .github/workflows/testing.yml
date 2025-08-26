@@ -1,3 +1,4 @@
+---
 name: Testing
 
 on:
@@ -58,7 +59,12 @@ jobs:
           eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
           carmel install
 
-      - name: Run tests
+      - name: Run unit tests
         run: |
           eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
-          carmel exec -- prove -lr t/
+          ./script/test-unit
+
+      - name: Run integration tests
+        run: |
+          eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+          ./script/test-integration
