@@ -5,6 +5,7 @@ use warnings;
 use v5.20;
 
 use TorrustDeploy::App -command;
+use TorrustDeploy::Provision::OpenTofu;
 use Path::Tiny qw(path);
 use File::Spec;
 use Time::HiRes qw(sleep);
@@ -43,14 +44,17 @@ sub execute {
     # Copy templates to working directory
     $self->_copy_templates($templates_dir, $tofu_dir);
     
+    # Create OpenTofu instance
+    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    
     # Initialize OpenTofu
-    $self->_run_tofu_init($tofu_dir);
+    $tofu->init($tofu_dir);
     
     # Apply OpenTofu configuration
-    $self->_run_tofu_apply($tofu_dir);
+    $tofu->apply($tofu_dir);
     
     # Get VM IP address
-    my $vm_ip = $self->_get_vm_ip($tofu_dir);
+    my $vm_ip = $tofu->get_vm_ip($tofu_dir);
     
     # Wait for cloud-init completion
     $self->_wait_for_cloud_init($vm_ip);
@@ -98,54 +102,6 @@ sub _copy_templates {
     say "Copied: $cloud_init_template -> $cloud_init_dest";
     
     say "Templates copied successfully.";
-}
-
-sub _run_tofu_init {
-    my ($self, $tofu_dir) = @_;
-    
-    say "Initializing OpenTofu...";
-    
-    my $result = system("cd '$tofu_dir' && tofu init");
-    if ($result != 0) {
-        die "OpenTofu init failed with exit code: $result";
-    }
-    
-    say "OpenTofu initialized successfully.";
-}
-
-sub _run_tofu_apply {
-    my ($self, $tofu_dir) = @_;
-    
-    say "Applying OpenTofu configuration...";
-    say "This may take a few minutes to download the base image and create the VM...";
-    
-    my $result = system("cd '$tofu_dir' && tofu apply -auto-approve");
-    if ($result != 0) {
-        die "OpenTofu apply failed with exit code: $result";
-    }
-    
-    say "OpenTofu apply completed successfully.";
-}
-
-sub _get_vm_ip {
-    my ($self, $tofu_dir) = @_;
-    
-    say "Getting VM IP address...";
-    
-    my $output = `cd '$tofu_dir' && tofu output -json`;
-    if ($? != 0) {
-        die "Failed to get OpenTofu outputs";
-    }
-    
-    my $outputs = decode_json($output);
-    my $vm_ip = $outputs->{vm_ip}{value};
-    
-    unless ($vm_ip) {
-        die "Could not retrieve VM IP address from OpenTofu outputs";
-    }
-    
-    say "VM IP address: $vm_ip";
-    return $vm_ip;
 }
 
 sub _wait_for_cloud_init {

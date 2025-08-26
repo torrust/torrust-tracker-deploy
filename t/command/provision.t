@@ -115,8 +115,13 @@ subtest 'Provision command internal methods' => sub {
     
     # Test that the command has the expected private methods
     ok($provision_cmd->can('_copy_templates'), 'Provision command has _copy_templates method');
-    ok($provision_cmd->can('_run_tofu_init'), 'Provision command has _run_tofu_init method');
-    ok($provision_cmd->can('_run_tofu_apply'), 'Provision command has _run_tofu_apply method');
+    
+    # Test that OpenTofu functionality is available via the OpenTofu package
+    require TorrustDeploy::Provision::OpenTofu;
+    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    ok($tofu->can('init'), 'OpenTofu package has init method');
+    ok($tofu->can('apply'), 'OpenTofu package has apply method');
+    ok($tofu->can('get_vm_ip'), 'OpenTofu package has get_vm_ip method');
 };
 
 done_testing;
