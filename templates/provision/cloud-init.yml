@@ -1,6 +1,7 @@
 #cloud-config
-# cloud-config
-# Optimized cloud-init configuration based on manual testing
+# ⚠️  CRITICAL: The line above MUST be exactly "#cloud-config" (no space after #)
+# This is a special cloud-init directive that will break VM provisioning if modified.
+# Linting tools may warn about missing space, but this is intentional and required.
 
 # Basic system configuration
 hostname: torrust-tracker
