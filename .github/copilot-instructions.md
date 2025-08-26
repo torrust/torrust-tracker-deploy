@@ -152,6 +152,5 @@ Note: E2E tests are excluded from pre-commit checks as they are slow and require
 ALWAYS run the linting suite before committing any changes:
 
 ```bash
-markdownlint "**/*.md"
-yamllint -c .yamllint-ci.yml .
+./script/lint
 ```

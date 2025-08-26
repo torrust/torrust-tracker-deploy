@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Unified lint script for running all linters
+# Usage: ./script/lint
+# 
+# This script runs all configured linters for the project:
+# - markdownlint for Markdown files
+# - yamllint for YAML files
+
+set -e
+
+echo "Running all linters..."
+
+# Check if markdownlint is available
+if ! command -v markdownlint &> /dev/null; then
+    echo "Error: markdownlint is not installed. Please install it with:"
+    echo "  npm install -g markdownlint-cli"
+    exit 1
+fi
+
+# Check if yamllint is available
+if ! command -v yamllint &> /dev/null; then
+    echo "Error: yamllint is not installed. Please install it with:"
+    echo "  pip install yamllint"
+    echo "  # or on Ubuntu/Debian:"
+    echo "  sudo apt-get install yamllint"
+    exit 1
+fi
+
+echo "Running markdown linting..."
+markdownlint "**/*.md"
+
+echo "Running yaml linting..."
+yamllint -c .yamllint-ci.yml .
+
+echo "All linters passed successfully!"
