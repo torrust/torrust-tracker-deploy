@@ -12,6 +12,7 @@ cpanm
 cpanminus
 dialout
 dmacvicar
+domstate
 dpkg
 getcwd
 hashref
