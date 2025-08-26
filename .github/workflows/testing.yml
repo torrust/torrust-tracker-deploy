@@ -16,11 +16,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y yamllint
-          sudo npm install -g markdownlint-cli
+          npm install -g markdownlint-cli
 
       - name: Run linting
         run: ./script/lint
