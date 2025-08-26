@@ -1,6 +1,6 @@
 # Torrust Tracker Deployment Tool
 
-A modern Perl console application for deploying Torrust Tracker to Hetzner Cloud using Packer, Terraform, and Ansible.
+A modern Perl console application for deploying Torrust Tracker to cloud providers using OpenTofu/Terraform and cloud-init for VM configuration.
 
 ## Code Quality Standards
 

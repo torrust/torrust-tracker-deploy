@@ -2,8 +2,22 @@
 
 # Torrust Tracker Deployment Tool
 
-A modern Perl console application for deploying Torrust Tracker to Hetzner Cloud using Packer,
-Terraform, and Ansible.
+A modern Perl console application for deploying Torrust Tracker to cloud providers using
+OpenTofu/Terraform and cloud-init for VM configuration.
+
+## Architecture Decision: Cloud-Init vs Golden Images
+
+This project uses cloud-init for VM configuration instead of building golden images with tools like
+Packer. While golden images could speed up provisioning by pre-installing the torrust user, Docker,
+and other basic setup, we chose cloud-init because:
+
+- **Cross-cloud compatibility**: No way to generate a single base image that works across multiple  
+  cloud providers
+- **Deployment frequency**: Since deployment is typically done once, the extra time for cloud-init  
+  configuration is acceptable
+- **Simplicity**: Eliminates the complexity of managing and maintaining custom images across  
+  different providers
+- **Transparency**: All VM configuration is visible in the cloud-init templates
 
 ## Perl Version Requirement
 

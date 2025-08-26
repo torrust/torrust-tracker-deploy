@@ -4,7 +4,7 @@ use v5.38;
 
 # App::Cmd framework setup - automatically discovers commands in TorrustDeploy::App::Command::*
 # Commands are found by convention: each .pm file in lib/TorrustDeploy/App/Command/ 
-# becomes a command (e.g., help.pm -> "help" command, packer.pm -> "packer" command)
+# becomes a command (e.g., provision.pm -> "provision" command)
 use App::Cmd::Setup -app;
 
 sub usage_desc { "%c %o" }
@@ -26,8 +26,8 @@ TorrustDeploy::App - Deploy Torrust Tracker to Hetzner Cloud
 
 =head1 DESCRIPTION
 
-A modern Perl console application for deploying Torrust Tracker to Hetzner Cloud
-using Packer, Terraform, and Ansible.
+A modern Perl console application for deploying Torrust Tracker to cloud providers
+using OpenTofu/Terraform and cloud-init for VM configuration.
 
 =head1 AUTHOR
 
