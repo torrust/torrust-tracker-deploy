@@ -1,5 +1,7 @@
 autoport
 buildx
+catdir
+catfile
 cdrom
 chdir
 cloudinit
@@ -11,9 +13,14 @@ cpanminus
 dialout
 dmacvicar
 dpkg
+getcwd
+hashref
+healthcheck
 Ilib
 installdeps
+keygen
 keyrings
+libssh
 libvirtd
 LOGLEVEL
 mkpath
@@ -24,6 +31,7 @@ opentofu
 perlbrew
 perlstyle
 plugdev
+publickey
 pwauth
 qcow
 rmem
@@ -31,8 +39,11 @@ runcmd
 rustup
 shogo
 somaxconn
+sprintf
 sshpass
 subtest
+testpass
+testuser
 tfstate
 usermod
 vcpu

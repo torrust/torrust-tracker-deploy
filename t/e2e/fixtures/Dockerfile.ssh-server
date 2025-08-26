@@ -1,0 +1,40 @@
+# Simple SSH server for testing
+FROM ubuntu:22.04
+
+# Install SSH server and other basic tools
+RUN apt-get update && \
+    apt-get install -y openssh-server sudo && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create SSH host keys
+RUN ssh-keygen -A
+
+# Create test user
+RUN useradd -m -s /bin/bash testuser && \
+    echo 'testuser:testpass123' | chpasswd && \
+    usermod -aG sudo testuser && \
+    echo 'testuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Create SSH directory for test user
+RUN mkdir -p /home/testuser/.ssh && \
+    chown testuser:testuser /home/testuser/.ssh && \
+    chmod 700 /home/testuser/.ssh
+
+# Configure SSH to allow password authentication
+RUN echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config && \
+    echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && \
+    echo 'PermitRootLogin no' >> /etc/ssh/sshd_config
+
+# Create run directory for SSH
+RUN mkdir -p /run/sshd
+
+# Copy SSH public key for testing
+COPY test_key.pub /home/testuser/.ssh/authorized_keys
+RUN chown testuser:testuser /home/testuser/.ssh/authorized_keys && \
+    chmod 600 /home/testuser/.ssh/authorized_keys
+
+# Expose SSH port
+EXPOSE 22
+
+# Start SSH daemon
+CMD ["/usr/sbin/sshd", "-D"]

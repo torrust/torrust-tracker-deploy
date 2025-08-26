@@ -3,6 +3,8 @@ requires 'App::Cmd';
 requires 'Moo';
 requires 'namespace::clean';
 requires 'Path::Tiny';
+requires 'Net::SSH2';
+requires 'Carp';
 
 on 'test' => sub {
     requires 'Test2::Suite';

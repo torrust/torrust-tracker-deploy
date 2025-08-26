@@ -41,6 +41,13 @@ local development.
 
 ## Installation
 
+First, install system dependencies:
+
+```bash
+# On Ubuntu/Debian:
+sudo apt install libssh2-1-dev
+```
+
 Install cpanminus:
 
 ```bash
@@ -114,6 +121,12 @@ Before using the provision command, ensure you have:
   sudo usermod -aG libvirt $USER
   ```
 
+- **SSH development libraries** for Net::SSH2 Perl module:
+
+  ```bash
+  sudo apt install libssh2-1-dev
+  ```
+
 - **Default libvirt storage pool** configured:
 
   ```bash
@@ -170,6 +183,7 @@ Run end-to-end tests that require local virtualization support:
 - Local machine with KVM/libvirt support
 - OpenTofu installed
 - Required system tools: `qemu-system-x86_64`, `sshpass`
+- SSH development libraries: `libssh2-1-dev`
 - Cannot run in CI environments
 
 ### All Tests
