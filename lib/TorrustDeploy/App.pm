@@ -9,6 +9,15 @@ use v5.20;
 # becomes a command (e.g., help.pm -> "help" command, packer.pm -> "packer" command)
 use App::Cmd::Setup -app;
 
+sub usage_desc { "%c %o" }
+
+sub global_opt_spec {
+  return (
+    [ "help|h",    "show help" ],
+    [ "version|v", "show version" ],
+  );
+}
+
 1;
 
 __END__

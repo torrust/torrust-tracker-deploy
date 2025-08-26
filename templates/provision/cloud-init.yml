@@ -1,0 +1,177 @@
+#cloud-config
+# cloud-config
+# Optimized cloud-init configuration based on manual testing
+
+# Basic system configuration
+hostname: torrust-tracker
+locale: en_US.UTF-8
+timezone: UTC
+
+# User configuration
+users:
+  - default
+  - name: torrust
+    groups: sudo
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+    lock_passwd: false # keep password login temporarily
+    plain_text_passwd: "torrust123" # Temporary password - REMOVE AFTER SSH KEY VERIFICATION
+
+# Package updates and installations
+package_update: true
+package_upgrade: true
+
+# Install packages (verified working order)
+packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - vim
+  - net-tools
+  - ca-certificates
+  - openssl
+  - gnupg
+  - lsb-release
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+
+# System configuration files
+write_files:
+  # SSH configuration to enable password authentication
+  # Commented out - enable only for debugging/recovery
+  - path: /etc/ssh/sshd_config.d/50-cloud-init.conf
+    content: |
+      PasswordAuthentication yes
+      PubkeyAuthentication yes
+    permissions: "0644"
+    owner: root:root
+
+  # Docker daemon configuration
+  - path: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      }
+    permissions: "0644"
+    owner: root:root
+
+  # Sysctl optimizations for network performance
+  - path: /etc/sysctl.d/99-torrust.conf
+    content: |
+      # Network optimizations for BitTorrent tracker
+      net.core.rmem_max = 268435456
+      net.core.wmem_max = 268435456
+      net.core.netdev_max_backlog = 5000
+      net.ipv4.tcp_rmem = 4096 65536 16777216
+      net.ipv4.tcp_wmem = 4096 65536 16777216
+      net.ipv4.tcp_congestion_control = bbr
+      net.ipv4.ip_local_port_range = 1024 65535
+      net.core.somaxconn = 1024
+    permissions: "0644"
+    owner: root:root
+
+# Commands to run after package installation
+runcmd:
+  # Set up persistent data volume and directory structure
+  # Create data directory on main filesystem for Hetzner (no separate volume)
+  - mkdir -p /var/lib/torrust
+  - chown -R torrust:torrust /var/lib/torrust
+
+  # Create torrust user directories
+  - mkdir -p /home/torrust/github/torrust
+  - chown -R torrust:torrust /home/torrust/github
+
+  # Configure SSH first (restart sshd with new config)
+  - systemctl restart sshd
+  - systemctl enable ssh
+
+  # Install Docker using official method
+  # Remove any old Docker packages
+  - >
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+    apt-get remove -y $pkg || true; done
+
+  # Add Docker's official GPG key
+  - mkdir -p /etc/apt/keyrings
+  - >
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg
+    -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  # Add Docker repository
+  - >
+    echo "deb [arch=$(dpkg --print-architecture)
+    signed-by=/etc/apt/keyrings/docker.asc]
+    https://download.docker.com/linux/ubuntu
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+    tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+  # Update package index and install Docker
+  - apt-get update
+  - >
+    apt-get install -y docker-ce docker-ce-cli containerd.io
+    docker-buildx-plugin docker-compose-plugin
+
+  # Configure Docker
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker torrust
+
+  # Verify Docker installation
+  - docker --version
+  - docker compose version
+
+  # CRITICAL: Configure UFW firewall SAFELY (allow SSH BEFORE enabling)
+  - ufw --force reset
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow ssh
+  - ufw allow 22/tcp
+  - ufw --force enable
+
+  # Apply sysctl settings
+  - sysctl -p /etc/sysctl.d/99-torrust.conf
+
+  # Configure automatic security updates
+  - >
+    echo 'Unattended-Upgrade::Automatic-Reboot "false";' >>
+    /etc/apt/apt.conf.d/50unattended-upgrades
+  - systemctl enable unattended-upgrades
+  # Set up log rotation for Docker
+  - systemctl restart docker
+
+  # Create completion marker for robust cloud-init status detection
+  # This file indicates that ALL cloud-init setup tasks have completed successfully
+  - echo "Cloud-init setup completed at $(date)" > /var/lib/cloud/torrust-setup-complete
+  - chmod 644 /var/lib/cloud/torrust-setup-complete
+
+# Final message
+final_message: |
+  Torrust Tracker VM setup completed!
+
+  System Information:
+  - OS: Ubuntu 24.04 LTS
+  - User: torrust (with sudo privileges and SSH key and password access)
+  - Docker: Installed and configured
+  - Security: Automatic updates enabled
+  - Note: All Torrust Tracker services run in Docker containers
+
+  SSH Access:
+  - SSH Key: ssh torrust@VM_IP
+  - Password must be disabled for security
+
+  The VM is ready for Torrust Tracker deployment!
+
+# Power state - reboot after setup
+power_state:
+  mode: reboot
+  message: "Rebooting after initial setup"
+  timeout: 60
+  condition: true

@@ -20,7 +20,8 @@ subtest 'App runs help command explicitly' => sub {
     }
     
     ok(!$@, 'App runs help command without dying') or diag("Error: $@");
-    like($output, qr/Torrust Tracker deployment tool/, 'Help command produces expected output');
+    like($output, qr/Available commands/, 'Help command produces expected output');
+    like($output, qr/provision:\s*Provision Torrust Tracker VM/, 'Help shows provision command with description');
 };
 
 done_testing;

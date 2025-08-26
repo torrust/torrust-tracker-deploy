@@ -1,4 +1,4 @@
-#!/usr/bin/env perl          # Shebang line - tells the system to use perl to execute this script
+#!/usr/bin/env perl
 
 # Set up Perl environment with safety features
 use strict;                  # Enable strict mode - catches common programming errors like undeclared variables

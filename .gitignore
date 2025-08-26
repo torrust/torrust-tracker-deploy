@@ -3,6 +3,9 @@ local/
 .carmel/
 cpanfile.snapshot
 
+# Build artifacts and working directories
+build/
+
 # Editor temporary files
 *.swp
 *.swo
