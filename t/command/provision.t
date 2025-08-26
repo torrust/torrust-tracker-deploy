@@ -4,19 +4,19 @@ use lib "$Bin/../../lib";
 use Path::Tiny qw(path);
 use File::Temp qw(tempdir);
 
-use TorrustDeploy::App::Command::provision;
+use TorrustDeploy::App::Command::Provision;
 use TorrustDeploy::App;
 
 subtest 'Provision command module loads correctly' => sub {
-    ok(TorrustDeploy::App::Command::provision->can('execute'), 'Provision command has execute method');
-    ok(TorrustDeploy::App::Command::provision->can('abstract'), 'Provision command has abstract method');
-    ok(TorrustDeploy::App::Command::provision->can('description'), 'Provision command has description method');
+    ok(TorrustDeploy::App::Command::Provision->can('execute'), 'Provision command has execute method');
+    ok(TorrustDeploy::App::Command::Provision->can('abstract'), 'Provision command has abstract method');
+    ok(TorrustDeploy::App::Command::Provision->can('description'), 'Provision command has description method');
 };
 
 subtest 'Provision command provides correct metadata' => sub {
-    is(TorrustDeploy::App::Command::provision->abstract, 'Provision Torrust Tracker VM using OpenTofu', 'Correct abstract');
+    is(TorrustDeploy::App::Command::Provision->abstract, 'Provision Torrust Tracker VM using OpenTofu', 'Correct abstract');
     
-    my $description = TorrustDeploy::App::Command::provision->description;
+    my $description = TorrustDeploy::App::Command::Provision->description;
     like($description, qr/Provision a Torrust Tracker virtual machine/, 'Description mentions VM provisioning');
     like($description, qr/OpenTofu/, 'Description mentions OpenTofu');
     like($description, qr/libvirt/, 'Description mentions libvirt');
@@ -71,7 +71,7 @@ subtest 'Provision command template copying functionality' => sub {
     
     # Create a mock provision command instance
     my $app = TorrustDeploy::App->new;
-    my $provision_cmd = TorrustDeploy::App::Command::provision->new({
+    my $provision_cmd = TorrustDeploy::App::Command::Provision->new({
         app => $app,
     });
     
@@ -109,7 +109,7 @@ subtest 'Provision command template copying functionality' => sub {
 
 subtest 'Provision command internal methods' => sub {
     my $app = TorrustDeploy::App->new;
-    my $provision_cmd = TorrustDeploy::App::Command::provision->new({
+    my $provision_cmd = TorrustDeploy::App::Command::Provision->new({
         app => $app,
     });
     

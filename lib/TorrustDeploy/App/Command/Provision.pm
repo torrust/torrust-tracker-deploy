@@ -1,8 +1,6 @@
-package TorrustDeploy::App::Command::provision;
+package TorrustDeploy::App::Command::Provision;
 
-use strict;
-use warnings;
-use v5.20;
+use v5.40;
 
 use TorrustDeploy::App -command;
 use TorrustDeploy::Provision::OpenTofu;
@@ -64,9 +62,6 @@ sub execute {
     
     # Show final summary
     $self->_show_final_summary($vm_ip);
-    
-    say "Provisioning completed successfully!";
-    say "VM is ready at IP: $vm_ip";
 }
 
 sub _copy_templates {
@@ -244,7 +239,7 @@ __END__
 
 =head1 NAME
 
-TorrustDeploy::App::Command::provision - Provision Torrust Tracker VM
+TorrustDeploy::App::Command::Provision - Provision Torrust Tracker VM
 
 =head1 DESCRIPTION
 

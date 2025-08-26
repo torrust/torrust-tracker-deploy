@@ -1,9 +1,7 @@
 #!/usr/bin/env perl
 
-# Set up Perl environment with safety features
-use strict;                  # Enable strict mode - catches common programming errors like undeclared variables
-use warnings;                # Enable warnings - shows potential issues in the code
-use v5.20;                   # Require Perl version 5.20 or higher for modern language features
+# Set up Perl environment with modern features (includes strict and warnings)
+use v5.40;
 
 # Configure module loading
 use FindBin qw($Bin);        # Import FindBin module and get $Bin variable containing this script's directory

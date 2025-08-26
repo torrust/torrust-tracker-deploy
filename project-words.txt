@@ -19,6 +19,7 @@ Mlocal
 netdev
 NOPASSWD
 opentofu
+perlstyle
 plugdev
 pwauth
 qcow

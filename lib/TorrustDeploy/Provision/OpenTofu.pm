@@ -1,8 +1,6 @@
 package TorrustDeploy::Provision::OpenTofu;
 
-use strict;
-use warnings;
-use v5.20;
+use v5.40;
 
 use JSON;
 
@@ -71,6 +69,7 @@ sub apply {
         die "OpenTofu apply failed with exit code: $result";
     }
     
+    say "";
     say "OpenTofu apply completed successfully.";
 }
 

@@ -4,6 +4,66 @@ A modern Perl console application for deploying Torrust Tracker to Hetzner Cloud
 
 ## Code Quality Standards
 
+### Perl Code Organization
+
+Follow [perlstyle](https://perldoc.perl.org/5.42.0/perlstyle) conventions for consistent, readable code.
+
+#### Core Requirements
+
+- **Always use strict and warnings**: `use strict; use warnings;` or `use v5.36;` (enables both)
+- **Modern Perl**: Use `use v5.40;` or higher for modern features (enables strict, warnings, and more)
+
+#### Naming Conventions
+
+- **Package names**: Mixed case starting with capital letter, no underscores
+
+  - Example: `TorrustDeploy::App::Command::Provision`
+  - Lowercase reserved for pragmas (`strict`, `warnings`, `integer`)
+
+- **Variable naming by scope**:
+
+  - `$ALL_CAPS_HERE` - constants only
+  - `$Some_Caps_Here` - package-wide global/static variables
+  - `$no_caps_here` - function scope `my()` or `local()` variables
+
+- **Function and method names**: All lowercase with underscores
+
+  - Example: `$obj->as_string()`, `provision_infrastructure()`
+
+- **Leading underscore**: Indicates private/internal use only
+  - Example: `_internal_helper()`, `$_private_var`
+
+#### Directory Structure
+
+- **Module directories (`lib/`)**: CamelCase following package names
+
+  - Example: `lib/TorrustDeploy/App/Command/Provision.pm`
+  - Each `::` separator becomes a directory `/` in the filesystem
+
+- **Test directories (`t/`)**: Lowercase with hyphens or underscores
+
+  - Example: `t/001-basic.t`, `t/provision-command.t`, `t/integration/tofu-provider.t`
+  - Follow established Perl testing conventions
+
+- **Standard project directories**: Use lowercase
+
+  - `lib/`, `bin/`, `t/`, `xt/`, `share/`, `templates/`, `script/`, `build/`
+
+- **General project directories**: Use lowercase with underscores for separation
+  - Example: `cloud_init/`, `user_data/`, `config_templates/`
+
+#### Code Style
+
+- **Indentation**: 4-column indent
+- **Braces**: Opening curly on same line as keyword, if possible
+- **Spacing**:
+  - Space before opening curly of multi-line BLOCK
+  - Space around most operators
+  - Space after each comma
+  - No space between function name and opening parenthesis
+- **Line breaks**: Break long lines after an operator (except `and`/`or`)
+- **Clarity**: Use parentheses when in doubt for readability
+
 ### Markdown Documentation
 
 - **Linting**: Follow [markdownlint](https://github.com/DavidAnson/markdownlint) conventions
