@@ -27,6 +27,7 @@ LOGLEVEL
 mkpath
 Mlocal
 netdev
+newgrp
 NOPASSWD
 opentofu
 perlbrew
@@ -46,6 +47,7 @@ subtest
 testpass
 testuser
 tfstate
+Undefining
 usermod
 vcpu
 virsh

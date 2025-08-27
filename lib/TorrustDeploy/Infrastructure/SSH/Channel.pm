@@ -2,6 +2,7 @@ package TorrustDeploy::Infrastructure::SSH::Channel;
 
 use v5.38;
 use Moo;
+use TorrustDeploy::Infrastructure::SSH::CommandResult;
 use Carp qw(croak);
 use namespace::clean;
 
@@ -18,17 +19,18 @@ has 'timeout' => (
 sub execute_command {
     my ($self, $command) = @_;
     
-    croak "Failed to execute command '$command': " . ($self->channel->error || 'Unknown error')
-        unless $self->channel->exec($command);
+    unless ($self->channel->exec($command)) {
+        my $error = $self->channel->error || 'Unknown error';
+        croak "Failed to execute command '$command': $error";
+    }
     
     my $output = $self->read_output();
     my $exit_code = $self->get_exit_code();
     
-    return {
+    return TorrustDeploy::Infrastructure::SSH::CommandResult->new(
         output => $output,
-        success => $exit_code == 0,
         exit_code => $exit_code,
-    };
+    );
 }
 
 sub health_check {

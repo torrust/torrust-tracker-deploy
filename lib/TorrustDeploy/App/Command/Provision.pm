@@ -61,6 +61,11 @@ sub execute {
     # Wait for cloud-init completion
     $self->_wait_for_cloud_init($ssh_connection);
     
+    # Force reconnection after cloud-init completes (VM reboots during cloud-init)
+    say "🔄 Refreshing SSH connection after cloud-init reboot...";
+    STDOUT->flush();
+    $ssh_connection->force_reconnect();
+    
     # Verify SSH key authentication after cloud-init completes
     $self->_verify_ssh_key_auth($ssh_connection);
     
@@ -108,6 +113,7 @@ sub _wait_for_cloud_init {
     
     say "Waiting for cloud-init to complete...";
     say "This may take several minutes while packages are installed and configured.";
+    STDOUT->flush();
     
     my $completion_file = "/var/lib/cloud/torrust-setup-complete";
     my $max_attempts = 360; # 30 minutes with 5-second intervals
@@ -117,6 +123,7 @@ sub _wait_for_cloud_init {
     
     # Step 1: Wait until SSH connection is available (for password auth to check cloud-init)
     say "⏳ Waiting for SSH service to become available...";
+    STDOUT->flush();
     
     while ($attempt < $max_attempts && !$ssh_connected) {
         $attempt++;
@@ -124,9 +131,11 @@ sub _wait_for_cloud_init {
         if ($ssh_connection->test_password_connection()) {
             $ssh_connected = 1;
             say "✅ SSH password connection established to " . $ssh_connection->host;
+            STDOUT->flush();
         } else {
             if ($attempt % 6 == 0) { # Every 30 seconds
                 say "  [Waiting for SSH connection... ${attempt}0s elapsed]";
+                STDOUT->flush();
             }
             sleep(5);
         }
@@ -134,36 +143,96 @@ sub _wait_for_cloud_init {
     
     if (!$ssh_connected) {
         say "❌ Failed to establish SSH connection to " . $ssh_connection->host . " after " . ($max_attempts * 5 / 60) . " minutes";
+        STDOUT->flush();
         $self->_print_cloud_init_logs($ssh_connection);
         die "SSH connection failed";
     }
     
     # Step 2: Wait until cloud-init completion marker is created
     say "⏳ Waiting for cloud-init to complete...";
+    STDOUT->flush();
     
     $attempt = 0;
+    my $consecutive_ssh_failures = 0;
     while ($attempt < $max_attempts) {
         $attempt++;
         
         my $result = $ssh_connection->execute_command("test -f $completion_file");
         
-        if ($result->{success}) {
+        # Debug: Always show result details when exit code is 0
+        if ($result->exit_code == 0) {
+            say "  [DEBUG] File exists! Exit code: " . $result->exit_code . 
+                ", Success method: " . ($result->success ? 'true' : 'false') . 
+                ", Output: '" . ($result->output // 'EMPTY') . "'";
+            STDOUT->flush();
+        }
+        
+        if ($result->success) {
             say "✅ Cloud-init setup completed successfully!";
+            STDOUT->flush();
             
             # Show completion message
             my $completion_result = $ssh_connection->execute_command("cat $completion_file");
-            if ($completion_result->{success} && $completion_result->{output}) {
-                chomp $completion_result->{output};
-                say "📅 Completion marker: " . $completion_result->{output};
+            if ($completion_result->success && $completion_result->output) {
+                chomp(my $output = $completion_result->output);
+                say "📅 Completion marker: " . $output;
+                STDOUT->flush();
             }
             $cloud_init_success = 1;
             last;
+        } else {
+            # Track consecutive SSH failures (exit code 255)
+            if ($result->exit_code == 255) {
+                $consecutive_ssh_failures++;
+                # If we have too many consecutive SSH failures, try to re-establish password connection
+                if ($consecutive_ssh_failures >= 12) { # 1 minute of consecutive failures
+                    say "⚠️ SSH connection lost, attempting to re-establish (VM may be rebooting)...";
+                    say "  [Waiting 30s for VM to complete reboot...]";
+                    STDOUT->flush();
+                    sleep(30); # Give VM time to fully reboot
+                    
+                    # Try to re-establish password connection (VM might have rebooted)
+                    my $reconnect_attempts = 0;
+                    while ($reconnect_attempts < 12 && !$ssh_connection->test_password_connection()) {
+                        $reconnect_attempts++;
+                        say "  [Reconnection attempt $reconnect_attempts/12...]";
+                        STDOUT->flush();
+                        sleep(15); # Wait longer between attempts
+                    }
+                    
+                    if ($ssh_connection->test_password_connection()) {
+                        say "✅ SSH connection re-established!";
+                        STDOUT->flush();
+                        $consecutive_ssh_failures = 0; # Reset counter after successful reconnection
+                    } else {
+                        say "❌ Failed to re-establish SSH connection after VM reboot.";
+                        say "  [DEBUG] Last error: " . $result->output;
+                        STDOUT->flush();
+                        last;
+                    }
+                }
+            } else {
+                # Reset counter for non-SSH failures (normal file-not-found errors)
+                $consecutive_ssh_failures = 0;
+            }
+            
+            # Debug: Show why the command failed
+            if ($attempt % 6 == 0) { # Every 30 seconds
+                my $elapsed_seconds = $attempt * 5;
+                say "   [DEBUG ${elapsed_seconds}s] File check failed - Exit code: " . $result->exit_code . 
+                    " (this is normal until cloud-init completes)";
+                if ($consecutive_ssh_failures > 0) {
+                    say "    [SSH failures: $consecutive_ssh_failures consecutive]";
+                }
+                STDOUT->flush();
+            }
         }
         
         # Show progress indicator every 2 minutes
         if ($attempt % 24 == 0) {
             my $elapsed_minutes = int($attempt * 5 / 60);
             say "  [Cloud-init still running... ${elapsed_minutes} minutes elapsed]";
+            STDOUT->flush();
         }
         
         sleep(5);
@@ -171,6 +240,7 @@ sub _wait_for_cloud_init {
     
     if (!$cloud_init_success) {
         say "❌ Timeout waiting for cloud-init to complete on " . $ssh_connection->host . " after " . ($max_attempts * 5 / 60) . " minutes";
+        STDOUT->flush();
         $self->_print_cloud_init_logs($ssh_connection);
         die "Cloud-init timeout";
     }
@@ -180,19 +250,52 @@ sub _show_final_summary {
     my ($self, $ssh_connection) = @_;
     
     say "📦 Final system summary:";
+    STDOUT->flush();
     
-    my $docker_result = $ssh_connection->execute_command('docker --version');
-    my $docker_version = $docker_result->{success} ? $docker_result->{output} : "Docker not available";
+    # Try multiple approaches to detect Docker
+    my $docker_result;
+    my $docker_method = "unknown";
+    
+    # Method 1: Try with newgrp (preferred for group activation)
+    $docker_result = $ssh_connection->execute_command('newgrp docker -c "docker --version" 2>&1');
+    if ($docker_result->success) {
+        $docker_method = "newgrp";
+    } else {
+        # Method 2: Try with sudo (fallback)
+        $docker_result = $ssh_connection->execute_command('sudo docker --version 2>&1');
+        if ($docker_result->success) {
+            $docker_method = "sudo";
+        } else {
+            # Method 3: Try direct command (may fail due to group membership)
+            $docker_result = $ssh_connection->execute_command('docker --version 2>&1');
+            if ($docker_result->success) {
+                $docker_method = "direct";
+            }
+        }
+    }
+    
+    my $docker_version;
+    if ($docker_result->success) {
+        $docker_version = $docker_result->output . " (via $docker_method)";
+    } else {
+        $docker_version = "Docker not available - all methods failed";
+    }
+    
     chomp $docker_version if $docker_version;
-    say "   Docker: $docker_version" if $docker_version;
+    say "   Docker: $docker_version";
+    STDOUT->flush();
     
-    my $ufw_result = $ssh_connection->execute_command('ufw status | head -1');
-    my $ufw_status = $ufw_result->{success} ? $ufw_result->{output} : "UFW not available";
+    # Check firewall status
+    
+    my $ufw_result = $ssh_connection->execute_command('sudo ufw status | head -1');
+    my $ufw_status = $ufw_result->success ? $ufw_result->output : "UFW not available";
     chomp $ufw_status if $ufw_status;
     say "   Firewall: $ufw_status" if $ufw_status;
+    STDOUT->flush();
 
     say "Provisioning completed successfully!";
     say "VM is ready at IP: " . $ssh_connection->host;
+    STDOUT->flush();
 }
 
 sub _print_cloud_init_logs {
@@ -203,16 +306,16 @@ sub _print_cloud_init_logs {
     # Print cloud-init-output.log
     say "=== /var/log/cloud-init-output.log ===";
     my $output_result = $ssh_connection->execute_command_with_sudo('cat /var/log/cloud-init-output.log');
-    if ($output_result->{success}) {
-        print $output_result->{output};
+    if ($output_result->success) {
+        print $output_result->output;
     } else {
         say "Cloud-init output log not available";
     }
     
     say "=== /var/log/cloud-init.log ===";
     my $main_result = $ssh_connection->execute_command_with_sudo('cat /var/log/cloud-init.log');
-    if ($main_result->{success}) {
-        print $main_result->{output};
+    if ($main_result->success) {
+        print $main_result->output;
     } else {
         say "Cloud-init main log not available";
     }
@@ -222,6 +325,7 @@ sub _verify_ssh_key_auth {
     my ($self, $ssh_connection) = @_;
     
     say "🔑 Checking SSH key authentication...";
+    STDOUT->flush();
     
     # SSH authentication might need time to fully stabilize after cloud-init reboot
     # Try with progressive delays: immediate, 5s, 10s, 15s
@@ -231,6 +335,7 @@ sub _verify_ssh_key_auth {
         if ($attempt > 0) {
             my $delay = $retry_delays[$attempt];
             say "⏳ Waiting ${delay}s before retry attempt " . ($attempt + 1) . "...";
+            STDOUT->flush();
             sleep $delay;
         }
         
@@ -243,16 +348,19 @@ sub _verify_ssh_key_auth {
         if ($fresh_ssh->test_key_connection()) {
             say "✅ SSH key authentication is working correctly!";
             say "You can now connect using: ssh -i " . $fresh_ssh->ssh_key_path . " " . $fresh_ssh->username . "@" . $fresh_ssh->host;
+            STDOUT->flush();
             return;
         }
         
         if ($attempt < $#retry_delays) {
             say "⚠️ SSH key authentication failed, will retry...";
+            STDOUT->flush();
         }
     }
     
     # All retries failed
     say "❌ SSH key authentication failed after all retries";
+    STDOUT->flush();
     $self->_print_cloud_init_logs($ssh_connection);
     die "SSH key authentication failed";
 }

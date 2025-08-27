@@ -87,20 +87,43 @@ sub get_vm_ip {
     my ($self, $tofu_dir) = @_;
     
     say "Getting VM IP address...";
+    STDOUT->flush(); # Force flush output buffer
     
-    my $output = `cd '$tofu_dir' && tofu output -json`;
-    if ($? != 0) {
-        die "Failed to get OpenTofu outputs";
+    # Capture stdout only, handle stderr separately
+    my $cmd = "cd '$tofu_dir' && tofu output -json";
+    my $output = `$cmd`;
+    my $exit_code = $? >> 8;
+    
+    if ($exit_code != 0) {
+        # If command failed, capture stderr for better error reporting
+        my $error_cmd = "cd '$tofu_dir' && tofu output -json 2>&1";
+        my $error_output = `$error_cmd`;
+        die "Failed to get OpenTofu outputs (exit code: $exit_code). Output: $error_output";
     }
     
-    my $outputs = decode_json($output);
+    # Check if we have any output
+    unless ($output && $output =~ /\S/) {
+        die "No output received from OpenTofu command";
+    }
+    
+    # Try to parse JSON with proper error handling
+    my $outputs;
+    eval {
+        $outputs = decode_json($output);
+    };
+    if ($@) {
+        die "Failed to parse OpenTofu output as JSON: $@\nOutput was: $output";
+    }
+    
+    # Extract VM IP
     my $vm_ip = $outputs->{vm_ip}{value};
     
     unless ($vm_ip) {
-        die "Could not retrieve VM IP address from OpenTofu outputs";
+        die "Could not retrieve VM IP address from OpenTofu outputs. Available outputs: " . join(", ", keys %$outputs);
     }
     
     say "VM IP address: $vm_ip";
+    STDOUT->flush(); # Force flush output buffer
     return $vm_ip;
 }
 

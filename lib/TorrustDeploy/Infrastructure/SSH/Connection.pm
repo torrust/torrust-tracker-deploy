@@ -4,6 +4,7 @@ use v5.38;
 use Moo;
 use Net::SSH2;
 use TorrustDeploy::Infrastructure::SSH::Channel;
+use TorrustDeploy::Infrastructure::SSH::CommandResult;
 use Carp qw(croak);
 use namespace::clean;
 
@@ -271,8 +272,9 @@ sub _attempt_command_execution {
     my ($self, $command) = @_;
     
     # Ensure we have an authenticated connection
-    return $self->_create_failure_result("Authentication failed") 
-        unless $self->_ensure_authenticated();
+    unless ($self->_ensure_authenticated()) {
+        return $self->_create_failure_result("Authentication failed");
+    }
     
     my $result = eval { $self->_execute_single_command($command) };
     
@@ -296,13 +298,8 @@ sub _execute_single_command {
     );
     
     # Use the Channel wrapper for command execution
-    my $result = $channel->execute_command($command);
-    
-    return {
-        output => $result->{output},
-        success => $result->{exit_code} == 0,
-        exit_code => $result->{exit_code},
-    };
+    # Channel now returns CommandResult directly
+    return $channel->execute_command($command);
 }
 
 #==============================================================================
@@ -340,11 +337,8 @@ sub _prepare_for_retry {
 sub _create_failure_result {
     my ($self, $error_message) = @_;
     
-    return {
-        output => $error_message,
-        success => 0,
-        exit_code => 255,
-    };
+    # Return CommandResult object directly
+    return TorrustDeploy::Infrastructure::SSH::CommandResult->failure_result($error_message);
 }
 
 #==============================================================================

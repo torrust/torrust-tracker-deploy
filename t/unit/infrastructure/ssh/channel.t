@@ -127,15 +127,13 @@ subtest 'Successful command execution' => sub {
     
     my $result = $channel->execute_command('echo test');
     
-    # Should return a structured response
-    is ref($result), 'HASH', 'execute_command returns hashref';
-    ok exists $result->{output}, 'result has output key';
-    ok exists $result->{success}, 'result has success key';
-    ok exists $result->{exit_code}, 'result has exit_code key';
+    # Should return a CommandResult object
+    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command returns CommandResult';
     
     # Should indicate success
-    ok $result->{success}, 'successful command shows success = true';
-    is $result->{exit_code}, 0, 'successful command shows exit_code = 0';
+    ok $result->is_success, 'successful command shows success = true';
+    is $result->exit_code, 0, 'successful command shows exit_code = 0';
+    is $result->output, '', 'output is accessible';
 };
 
 subtest 'Failed command execution' => sub {
@@ -151,9 +149,12 @@ subtest 'Failed command execution' => sub {
     
     my $result = $channel->execute_command('exit 1');
     
+    # Should return a CommandResult object  
+    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command returns CommandResult';
+    
     # Should indicate failure
-    ok !$result->{success}, 'failed command shows success = false';
-    is $result->{exit_code}, 1, 'failed command shows correct exit_code';
+    ok $result->is_failure, 'failed command shows failure = true';
+    is $result->exit_code, 1, 'failed command shows correct exit_code';
 };
 
 subtest 'Health check' => sub {

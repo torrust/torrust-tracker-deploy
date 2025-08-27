@@ -90,15 +90,13 @@ subtest 'Command execution structure' => sub {
     # Test command execution with failed connection
     my $result = $ssh->execute_command('echo test');
     
-    # Should return a structured response even on failure
-    is ref($result), 'HASH', 'execute_command returns hashref';
-    ok exists $result->{output}, 'result has output key';
-    ok exists $result->{success}, 'result has success key';
-    ok exists $result->{exit_code}, 'result has exit_code key';
+    # Should return a CommandResult object even on failure
+    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command returns CommandResult';
     
     # Should indicate failure
-    ok !$result->{success}, 'failed connection shows success = false';
-    is $result->{exit_code}, 255, 'failed connection shows exit_code = 255';
+    ok $result->is_failure, 'failed connection shows failure = true';
+    is $result->exit_code, 255, 'failed connection shows exit_code = 255';
+    ok $result->has_output, 'failed connection has error message output';
 };
 
 subtest 'Sudo command wrapper' => sub {
@@ -108,10 +106,9 @@ subtest 'Sudo command wrapper' => sub {
     my $result = $ssh->execute_command_with_sudo('systemctl status');
     
     # Should return same structure as execute_command
-    is ref($result), 'HASH', 'execute_command_with_sudo returns hashref';
-    ok exists $result->{output}, 'sudo result has output key';
-    ok exists $result->{success}, 'sudo result has success key';
-    ok exists $result->{exit_code}, 'sudo result has exit_code key';
+    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command_with_sudo returns CommandResult';
+    ok $result->is_failure, 'sudo command with failed connection shows failure';
+    is $result->exit_code, 255, 'sudo command with failed connection shows exit_code = 255';
 };
 
 subtest 'Disconnect and cleanup' => sub {

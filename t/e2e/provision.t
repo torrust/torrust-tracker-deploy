@@ -105,14 +105,14 @@ subtest 'provision command executes successfully' => sub {
     plan tests => 3;
     
     note "Starting provision command (this may take several minutes)...";
-    note "Command: $^X -Ilib bin/torrust-deploy provision";
+    note "Command: carmel exec -- $^X -Ilib bin/torrust-deploy provision";
     note "Use 'prove -v' to see real-time output from system commands";
     
     my $start_time = time();
-    my $timeout = $ENV{E2E_TIMEOUT} || 1200; # 20 minutes default, configurable
+    my $timeout = $ENV{E2E_TIMEOUT} || 480; # 8 minutes default, configurable
     
-    # Run command with timeout
-    my $cmd = "timeout ${timeout}s $^X -Ilib bin/torrust-deploy provision";
+    # Run command with timeout using carmel exec for proper dependencies
+    my $cmd = "timeout ${timeout}s carmel exec -- $^X -Ilib bin/torrust-deploy provision";
     my $exit_code = system($cmd);
     my $duration = time() - $start_time;
     

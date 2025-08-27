@@ -103,24 +103,24 @@ subtest 'Container SSH Connection Tests' => sub {
         
         # Test simple command
         my $result = $ssh->execute_command('echo "Hello E2E Test"');
-        ok $result->{success}, 'simple echo command succeeds';
-        is $result->{exit_code}, 0, 'echo command has exit code 0';
-        like $result->{output}, qr/Hello E2E Test/, 'echo command output is correct';
+        ok $result->is_success, 'simple echo command succeeds';
+        is $result->exit_code, 0, 'echo command has exit code 0';
+        like $result->output, qr/Hello E2E Test/, 'echo command output is correct';
         
         # Test command with variables
         my $whoami_result = $ssh->execute_command('whoami');
-        ok $whoami_result->{success}, 'whoami command succeeds';
-        like $whoami_result->{output}, qr/testuser/, 'whoami returns correct username';
+        ok $whoami_result->is_success, 'whoami command succeeds';
+        like $whoami_result->output, qr/testuser/, 'whoami returns correct username';
         
         # Test command that should fail
         my $fail_result = $ssh->execute_command('exit 42');
-        ok !$fail_result->{success}, 'failing command returns success=false';
-        is $fail_result->{exit_code}, 42, 'failing command returns correct exit code';
+        ok $fail_result->is_failure, 'failing command returns failure=true';
+        is $fail_result->exit_code, 42, 'failing command returns correct exit code';
         
         # Test sudo command
         my $sudo_result = $ssh->execute_command_with_sudo('whoami');
-        ok $sudo_result->{success}, 'sudo command succeeds';
-        like $sudo_result->{output}, qr/root/, 'sudo command runs as root';
+        ok $sudo_result->is_success, 'sudo command succeeds';
+        like $sudo_result->output, qr/root/, 'sudo command runs as root';
     };
     
     subtest 'Connection Reuse' => sub {
@@ -137,13 +137,13 @@ subtest 'Container SSH Connection Tests' => sub {
         my $cmd2 = $ssh->execute_command('echo "Command 2"');
         my $cmd3 = $ssh->execute_command('echo "Command 3"');
         
-        ok $cmd1->{success}, 'first command succeeds';
-        ok $cmd2->{success}, 'second command succeeds (connection reused)';
-        ok $cmd3->{success}, 'third command succeeds (connection reused)';
+        ok $cmd1->is_success, 'first command succeeds';
+        ok $cmd2->is_success, 'second command succeeds (connection reused)';
+        ok $cmd3->is_success, 'third command succeeds (connection reused)';
         
-        like $cmd1->{output}, qr/Command 1/, 'first command output correct';
-        like $cmd2->{output}, qr/Command 2/, 'second command output correct';
-        like $cmd3->{output}, qr/Command 3/, 'third command output correct';
+        like $cmd1->output, qr/Command 1/, 'first command output correct';
+        like $cmd2->output, qr/Command 2/, 'second command output correct';
+        like $cmd3->output, qr/Command 3/, 'third command output correct';
     };
     
     subtest 'Authentication Fallback' => sub {
@@ -165,7 +165,7 @@ subtest 'Container SSH Connection Tests' => sub {
         
         # Command execution should work with key auth
         my $result = $ssh->execute_command('echo "Fallback test"');
-        ok $result->{success}, 'command works after authentication fallback';
+        ok $result->is_success, 'command works after authentication fallback';
     };
     
     subtest 'Error Handling' => sub {
@@ -181,9 +181,9 @@ subtest 'Container SSH Connection Tests' => sub {
         ok !$ssh_bad_host->test_password_connection(), 'connection to bad host fails gracefully';
         
         my $result = $ssh_bad_host->execute_command('echo test');
-        ok !$result->{success}, 'command execution fails with bad host';
-        is $result->{exit_code}, 255, 'bad host returns exit code 255';
-        like $result->{output}, qr/Authentication failed/, 'error message indicates authentication failure';
+        ok $result->is_failure, 'command execution fails with bad host';
+        is $result->exit_code, 255, 'bad host returns exit code 255';
+        like $result->output, qr/Authentication failed/, 'error message indicates authentication failure';
     };
     
     subtest 'Disconnect and Cleanup' => sub {
