@@ -1,8 +1,8 @@
-package TorrustDeploy::Infrastructure::SSH::Channel;
+package TorrustDeploy::SSH::Channel;
 
 use v5.38;
 use Moo;
-use TorrustDeploy::Infrastructure::SSH::CommandResult;
+use TorrustDeploy::SSH::CommandResult;
 use Carp qw(croak);
 use namespace::clean;
 
@@ -27,7 +27,7 @@ sub execute_command {
     my $output = $self->read_output();
     my $exit_code = $self->get_exit_code();
     
-    return TorrustDeploy::Infrastructure::SSH::CommandResult->new(
+    return TorrustDeploy::SSH::CommandResult->new(
         output => $output,
         exit_code => $exit_code,
     );
@@ -154,7 +154,7 @@ __END__
 
 =head1 NAME
 
-TorrustDeploy::Infrastructure::SSH::Channel - SSH channel wrapper for command execution
+TorrustDeploy::SSH::Channel - SSH channel wrapper for command execution
 
 =head1 DESCRIPTION
 
@@ -164,11 +164,11 @@ channel operations in a testable, reusable component.
 
 =head1 SYNOPSIS
 
-    use TorrustDeploy::Infrastructure::SSH::Channel;
+    use TorrustDeploy::SSH::Channel;
     
     # Create channel from SSH2 connection
     my $raw_channel = $ssh2->channel();
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $raw_channel,
         timeout => 30,
     );

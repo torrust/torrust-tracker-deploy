@@ -1,10 +1,10 @@
-package TorrustDeploy::Infrastructure::SSH::Connection;
+package TorrustDeploy::SSH::Connection;
 
 use v5.38;
 use Moo;
 use Net::SSH2;
-use TorrustDeploy::Infrastructure::SSH::Channel;
-use TorrustDeploy::Infrastructure::SSH::CommandResult;
+use TorrustDeploy::SSH::Channel;
+use TorrustDeploy::SSH::CommandResult;
 use Carp qw(croak);
 use namespace::clean;
 
@@ -172,7 +172,7 @@ sub _execute_health_check_command {
         return 0 unless $raw_channel;
         
         # Wrap in our Channel wrapper with shorter timeout for health checks
-        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        my $channel = TorrustDeploy::SSH::Channel->new(
             channel => $raw_channel,
             timeout => 5,  # 5 second timeout for health checks
         );
@@ -292,7 +292,7 @@ sub _execute_single_command {
     my $raw_channel = $self->_create_raw_ssh_channel($ssh2);
     
     # Wrap the raw channel in our Channel wrapper
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $raw_channel,
         timeout => $self->command_timeout,
     );
@@ -338,7 +338,7 @@ sub _create_failure_result {
     my ($self, $error_message) = @_;
     
     # Return CommandResult object directly
-    return TorrustDeploy::Infrastructure::SSH::CommandResult->failure_result($error_message);
+    return TorrustDeploy::SSH::CommandResult->failure_result($error_message);
 }
 
 #==============================================================================
@@ -442,7 +442,7 @@ __END__
 
 =head1 NAME
 
-TorrustDeploy::Infrastructure::SSH::Connection - SSH connection management using Net::SSH2
+TorrustDeploy::SSH::Connection - SSH connection management using Net::SSH2
 
 =head1 DESCRIPTION
 

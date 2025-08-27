@@ -1,4 +1,4 @@
-package TorrustDeploy::Infrastructure::SSH::CommandResult;
+package TorrustDeploy::SSH::CommandResult;
 
 use v5.38;
 use Moo;
@@ -66,7 +66,7 @@ __END__
 
 =head1 NAME
 
-TorrustDeploy::Infrastructure::SSH::CommandResult - Value object for SSH command execution results
+TorrustDeploy::SSH::CommandResult - Value object for SSH command execution results
 
 =head1 DESCRIPTION
 
@@ -75,15 +75,15 @@ interface and eliminating duplication of result handling logic.
 
 =head1 SYNOPSIS
 
-    use TorrustDeploy::Infrastructure::SSH::CommandResult;
+    use TorrustDeploy::SSH::CommandResult;
     
     # Create successful result
-    my $result = TorrustDeploy::Infrastructure::SSH::CommandResult->success_result(
+    my $result = TorrustDeploy::SSH::CommandResult->success_result(
         "Command output", 0
     );
     
     # Create failure result
-    my $error = TorrustDeploy::Infrastructure::SSH::CommandResult->failure_result(
+    my $error = TorrustDeploy::SSH::CommandResult->failure_result(
         "Command failed", 1
     );
     

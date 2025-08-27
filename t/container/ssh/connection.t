@@ -6,7 +6,7 @@ use File::Spec;
 use Cwd qw(getcwd);
 
 use lib 'lib';
-use TorrustDeploy::Infrastructure::SSH::Connection;
+use TorrustDeploy::SSH::Connection;
 
 # Configuration for test SSH server
 my $SSH_HOST = 'localhost';
@@ -73,7 +73,7 @@ END { stop_ssh_server(); }
 
 subtest 'Container SSH Connection Tests' => sub {
     subtest 'Connection and Authentication' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh = TorrustDeploy::SSH::Connection->new(
             host => "$SSH_HOST:$SSH_PORT",
             username => $SSH_USER,
             password => $SSH_PASS,
@@ -93,7 +93,7 @@ subtest 'Container SSH Connection Tests' => sub {
     };
     
     subtest 'Command Execution' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh = TorrustDeploy::SSH::Connection->new(
             host => "$SSH_HOST:$SSH_PORT",
             username => $SSH_USER,
             password => $SSH_PASS,
@@ -124,7 +124,7 @@ subtest 'Container SSH Connection Tests' => sub {
     };
     
     subtest 'Connection Reuse' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh = TorrustDeploy::SSH::Connection->new(
             host => "$SSH_HOST:$SSH_PORT",
             username => $SSH_USER,
             password => $SSH_PASS,
@@ -148,7 +148,7 @@ subtest 'Container SSH Connection Tests' => sub {
     
     subtest 'Authentication Fallback' => sub {
         # Test with wrong password but correct key
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh = TorrustDeploy::SSH::Connection->new(
             host => "$SSH_HOST:$SSH_PORT",
             username => $SSH_USER,
             password => 'wrong_password',
@@ -170,7 +170,7 @@ subtest 'Container SSH Connection Tests' => sub {
     
     subtest 'Error Handling' => sub {
         # Test with completely wrong host
-        my $ssh_bad_host = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh_bad_host = TorrustDeploy::SSH::Connection->new(
             host => 'nonexistent.example.com:22',
             username => $SSH_USER,
             password => $SSH_PASS,
@@ -187,7 +187,7 @@ subtest 'Container SSH Connection Tests' => sub {
     };
     
     subtest 'Disconnect and Cleanup' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh = TorrustDeploy::SSH::Connection->new(
             host => "$SSH_HOST:$SSH_PORT",
             username => $SSH_USER,
             password => $SSH_PASS,

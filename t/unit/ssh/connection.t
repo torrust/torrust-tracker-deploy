@@ -2,22 +2,21 @@
 
 use v5.38;
 use Test2::V0;
-use Test::Exception;
 
 use lib 'lib';
-use TorrustDeploy::Infrastructure::SSH::Connection;
+use TorrustDeploy::SSH::Connection;
 
 subtest 'Constructor and Attributes' => sub {
     subtest 'Required attributes' => sub {
-        dies_ok { 
-            TorrustDeploy::Infrastructure::SSH::Connection->new() 
-        } 'dies without required host';
-        
-        like $@, qr/required/, 'error message mentions required attribute';
+        my $result = dies { 
+            TorrustDeploy::SSH::Connection->new() 
+        };
+        ok $result, 'dies without required host';
+        like $result, qr/required/, 'error message mentions required attribute';
     };
     
     subtest 'Default values' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '192.168.1.100');
+        my $ssh = TorrustDeploy::SSH::Connection->new(host => '192.168.1.100');
         
         is $ssh->host, '192.168.1.100', 'host is set correctly';
         is $ssh->username, 'torrust', 'default username';
@@ -28,7 +27,7 @@ subtest 'Constructor and Attributes' => sub {
     };
     
     subtest 'Custom values' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
+        my $ssh = TorrustDeploy::SSH::Connection->new(
             host => '10.0.0.5',
             username => 'custom_user',
             password => 'secure_password',
@@ -46,16 +45,21 @@ subtest 'Constructor and Attributes' => sub {
     };
     
     subtest 'Read-only attributes' => sub {
-        my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '192.168.1.100');
+        my $ssh = TorrustDeploy::SSH::Connection->new(host => '192.168.1.100');
         
-        dies_ok { $ssh->host('new_host') } 'host is read-only';
-        dies_ok { $ssh->username('new_user') } 'username is read-only';
-        dies_ok { $ssh->password('new_pass') } 'password is read-only';
+        my $result1 = dies { $ssh->host('new_host') };
+        ok $result1, 'host is read-only';
+        
+        my $result2 = dies { $ssh->username('new_user') };
+        ok $result2, 'username is read-only';
+        
+        my $result3 = dies { $ssh->password('new_pass') };
+        ok $result3, 'password is read-only';
     };
 };
 
 subtest 'Method existence and basic behavior' => sub {
-    my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '192.168.1.100');
+    my $ssh = TorrustDeploy::SSH::Connection->new(host => '192.168.1.100');
     
     # Test that methods exist and can be called
     can_ok $ssh, 'test_password_connection';
@@ -70,28 +74,30 @@ subtest 'Method existence and basic behavior' => sub {
 
 subtest 'Connection failure handling' => sub {
     # Test with invalid host that should fail to connect
-    my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '999.999.999.999');
+    my $ssh = TorrustDeploy::SSH::Connection->new(host => '999.999.999.999');
     
     # These should fail gracefully and return false (not die)
-    lives_ok { 
+    my $result1 = lives { 
         my $result = $ssh->test_password_connection();
         ok !$result, 'password connection to invalid host returns false';
-    } 'password connection failure is handled gracefully';
+    };
+    ok $result1, 'password connection failure is handled gracefully';
     
-    lives_ok { 
+    my $result2 = lives { 
         my $result = $ssh->test_key_connection();
         ok !$result, 'key connection to invalid host returns false';
-    } 'key connection failure is handled gracefully';
+    };
+    ok $result2, 'key connection failure is handled gracefully';
 };
 
 subtest 'Command execution structure' => sub {
-    my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '999.999.999.999');
+    my $ssh = TorrustDeploy::SSH::Connection->new(host => '999.999.999.999');
     
     # Test command execution with failed connection
     my $result = $ssh->execute_command('echo test');
     
     # Should return a CommandResult object even on failure
-    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command returns CommandResult';
+    is ref($result), 'TorrustDeploy::SSH::CommandResult', 'execute_command returns CommandResult';
     
     # Should indicate failure
     ok $result->is_failure, 'failed connection shows failure = true';
@@ -100,29 +106,30 @@ subtest 'Command execution structure' => sub {
 };
 
 subtest 'Sudo command wrapper' => sub {
-    my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '999.999.999.999');
+    my $ssh = TorrustDeploy::SSH::Connection->new(host => '999.999.999.999');
     
     # Test that sudo wrapper calls execute_command
     my $result = $ssh->execute_command_with_sudo('systemctl status');
     
     # Should return same structure as execute_command
-    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command_with_sudo returns CommandResult';
+    is ref($result), 'TorrustDeploy::SSH::CommandResult', 'execute_command_with_sudo returns CommandResult';
     ok $result->is_failure, 'sudo command with failed connection shows failure';
     is $result->exit_code, 255, 'sudo command with failed connection shows exit_code = 255';
 };
 
 subtest 'Disconnect and cleanup' => sub {
-    my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '192.168.1.100');
+    my $ssh = TorrustDeploy::SSH::Connection->new(host => '192.168.1.100');
     
     # Test disconnect method exists and can be called
-    lives_ok { $ssh->disconnect() } 'disconnect method can be called';
+    my $result = lives { $ssh->disconnect() };
+    ok $result, 'disconnect method can be called';
     
     # Test that authentication state is reset
     is $ssh->_authenticated, 0, 'authentication state is reset after disconnect';
 };
 
 subtest 'Helper methods' => sub {
-    my $ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(host => '192.168.1.100');
+    my $ssh = TorrustDeploy::SSH::Connection->new(host => '192.168.1.100');
     
     # Test private helper methods exist
     can_ok $ssh, '_ensure_authenticated';

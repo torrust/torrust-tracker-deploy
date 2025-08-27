@@ -4,7 +4,7 @@ use v5.38;
 use Test2::V0;
 
 use lib 'lib';
-use TorrustDeploy::Infrastructure::SSH::Channel;
+use TorrustDeploy::SSH::Channel;
 
 # Mock channel object for testing (simple hash-based mock)
 package MockChannel {
@@ -43,7 +43,7 @@ package MockChannel {
 subtest 'Constructor and Attributes' => sub {
     subtest 'Required attributes' => sub {
         my $result = dies { 
-            TorrustDeploy::Infrastructure::SSH::Channel->new() 
+            TorrustDeploy::SSH::Channel->new() 
         };
         ok $result, 'dies without required channel';
         
@@ -52,7 +52,7 @@ subtest 'Constructor and Attributes' => sub {
     
     subtest 'Default values' => sub {
         my $mock_channel = MockChannel->new();
-        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        my $channel = TorrustDeploy::SSH::Channel->new(
             channel => $mock_channel
         );
         
@@ -62,7 +62,7 @@ subtest 'Constructor and Attributes' => sub {
     
     subtest 'Custom values' => sub {
         my $mock_channel = MockChannel->new();
-        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        my $channel = TorrustDeploy::SSH::Channel->new(
             channel => $mock_channel,
             timeout => 60,
         );
@@ -73,7 +73,7 @@ subtest 'Constructor and Attributes' => sub {
     
     subtest 'Read-only attributes' => sub {
         my $mock_channel = MockChannel->new();
-        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        my $channel = TorrustDeploy::SSH::Channel->new(
             channel => $mock_channel
         );
         
@@ -87,7 +87,7 @@ subtest 'Constructor and Attributes' => sub {
 
 subtest 'Method existence' => sub {
     my $mock_channel = MockChannel->new();
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $mock_channel
     );
     
@@ -101,7 +101,7 @@ subtest 'Method existence' => sub {
 subtest 'Command execution structure' => sub {
     my $mock_channel = MockChannel->new(exec_result => 0); # Simulate exec failure
     
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $mock_channel
     );
     
@@ -121,14 +121,14 @@ subtest 'Successful command execution' => sub {
         exit_status => 0,
     );
     
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $mock_channel
     );
     
     my $result = $channel->execute_command('echo test');
     
     # Should return a CommandResult object
-    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command returns CommandResult';
+    is ref($result), 'TorrustDeploy::SSH::CommandResult', 'execute_command returns CommandResult';
     
     # Should indicate success
     ok $result->is_success, 'successful command shows success = true';
@@ -143,14 +143,14 @@ subtest 'Failed command execution' => sub {
         exit_status => 1, # Non-zero exit
     );
     
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $mock_channel
     );
     
     my $result = $channel->execute_command('exit 1');
     
     # Should return a CommandResult object  
-    is ref($result), 'TorrustDeploy::Infrastructure::SSH::CommandResult', 'execute_command returns CommandResult';
+    is ref($result), 'TorrustDeploy::SSH::CommandResult', 'execute_command returns CommandResult';
     
     # Should indicate failure
     ok $result->is_failure, 'failed command shows failure = true';
@@ -164,7 +164,7 @@ subtest 'Health check' => sub {
             read_output => 'health_check',
         );
         
-        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        my $channel = TorrustDeploy::SSH::Channel->new(
             channel => $mock_channel
         );
         
@@ -175,7 +175,7 @@ subtest 'Health check' => sub {
     subtest 'Failed health check - exec fails' => sub {
         my $mock_channel = MockChannel->new(exec_result => 0); # Exec fails
         
-        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        my $channel = TorrustDeploy::SSH::Channel->new(
             channel => $mock_channel
         );
         
@@ -187,7 +187,7 @@ subtest 'Health check' => sub {
 subtest 'Close method' => sub {
     my $mock_channel = MockChannel->new();
     
-    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+    my $channel = TorrustDeploy::SSH::Channel->new(
         channel => $mock_channel
     );
     
