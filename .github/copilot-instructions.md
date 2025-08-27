@@ -12,6 +12,15 @@ Follow [perlstyle](https://perldoc.perl.org/5.42.0/perlstyle) conventions for co
 
 - **Modern Perl**: Use `use v5.38;` for modern features (enables strict, warnings, and more)
 
+#### Package Management
+
+- **Carmel**: This project uses [carmel](https://metacpan.org/pod/Carmel) as the package manager for Perl dependencies
+  - Dependencies are declared in `cpanfile`
+  - Lock file is maintained in `cpanfile.snapshot` for reproducible builds
+  - Use `carmel install` to install dependencies locally
+  - Use `carmel exec` to run commands with the correct dependency environment
+  - Local dependencies are installed in `local/` directory (git-ignored)
+
 #### Naming Conventions
 
 - **Package names**: Mixed case starting with capital letter, no underscores
