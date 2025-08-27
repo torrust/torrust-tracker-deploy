@@ -62,19 +62,8 @@ sub execute {
     # Wait for cloud-init completion
     $self->_wait_for_cloud_init($ssh_connection);
     
-    # Force reconnection after cloud-init completes (VM reboots during cloud-init)
-    say "🔄 Refreshing SSH connection after cloud-init reboot...";
-    STDOUT->flush();
-    $ssh_connection->force_reconnect();
-    
-    # Verify SSH key authentication after cloud-init completes
-    $self->_verify_ssh_key_auth($ssh_connection);
-    
-    # Run Ansible post-provision verification (experimental)
+    # Run Ansible post-provision verification
     $self->_run_ansible_verification($vm_ip, $work_dir);
-    
-    # Show final summary
-    $self->_show_final_summary($ssh_connection);
 }
 
 sub _copy_templates {
@@ -250,58 +239,6 @@ sub _wait_for_cloud_init {
     }
 }
 
-sub _show_final_summary {
-    my ($self, $ssh_connection) = @_;
-    
-    say "📦 Final system summary:";
-    STDOUT->flush();
-    
-    # Try multiple approaches to detect Docker
-    my $docker_result;
-    my $docker_method = "unknown";
-    
-    # Method 1: Try with newgrp (preferred for group activation)
-    $docker_result = $ssh_connection->execute_command('newgrp docker -c "docker --version" 2>&1');
-    if ($docker_result->success) {
-        $docker_method = "newgrp";
-    } else {
-        # Method 2: Try with sudo (fallback)
-        $docker_result = $ssh_connection->execute_command('sudo docker --version 2>&1');
-        if ($docker_result->success) {
-            $docker_method = "sudo";
-        } else {
-            # Method 3: Try direct command (may fail due to group membership)
-            $docker_result = $ssh_connection->execute_command('docker --version 2>&1');
-            if ($docker_result->success) {
-                $docker_method = "direct";
-            }
-        }
-    }
-    
-    my $docker_version;
-    if ($docker_result->success) {
-        $docker_version = $docker_result->output . " (via $docker_method)";
-    } else {
-        $docker_version = "Docker not available - all methods failed";
-    }
-    
-    chomp $docker_version if $docker_version;
-    say "   Docker: $docker_version";
-    STDOUT->flush();
-    
-    # Check firewall status
-    
-    my $ufw_result = $ssh_connection->execute_command('sudo ufw status | head -1');
-    my $ufw_status = $ufw_result->success ? $ufw_result->output : "UFW not available";
-    chomp $ufw_status if $ufw_status;
-    say "   Firewall: $ufw_status" if $ufw_status;
-    STDOUT->flush();
-
-    say "Provisioning completed successfully!";
-    say "VM is ready at IP: " . $ssh_connection->host;
-    STDOUT->flush();
-}
-
 sub _print_cloud_init_logs {
     my ($self, $ssh_connection) = @_;
     
@@ -325,55 +262,11 @@ sub _print_cloud_init_logs {
     }
 }
 
-sub _verify_ssh_key_auth {
-    my ($self, $ssh_connection) = @_;
-    
-    say "🔑 Checking SSH key authentication...";
-    STDOUT->flush();
-    
-    # SSH authentication might need time to fully stabilize after cloud-init reboot
-    # Try with progressive delays: immediate, 5s, 10s, 15s
-    my @retry_delays = (0, 5, 10, 15);
-    
-    for my $attempt (0..$#retry_delays) {
-        if ($attempt > 0) {
-            my $delay = $retry_delays[$attempt];
-            say "⏳ Waiting ${delay}s before retry attempt " . ($attempt + 1) . "...";
-            STDOUT->flush();
-            sleep $delay;
-        }
-        
-        # Create a fresh SSH connection for key authentication test
-        # This ensures we don't have any state issues from cloud-init monitoring
-        my $fresh_ssh = TorrustDeploy::Infrastructure::SSH::Connection->new(
-            host => $ssh_connection->host
-        );
-        
-        if ($fresh_ssh->test_key_connection()) {
-            say "✅ SSH key authentication is working correctly!";
-            say "You can now connect using: ssh -i " . $fresh_ssh->ssh_key_path . " " . $fresh_ssh->username . "@" . $fresh_ssh->host;
-            STDOUT->flush();
-            return;
-        }
-        
-        if ($attempt < $#retry_delays) {
-            say "⚠️ SSH key authentication failed, will retry...";
-            STDOUT->flush();
-        }
-    }
-    
-    # All retries failed
-    say "❌ SSH key authentication failed after all retries";
-    STDOUT->flush();
-    $self->_print_cloud_init_logs($ssh_connection);
-    die "SSH key authentication failed";
-}
-
 sub _run_ansible_verification {
     my ($self, $vm_ip, $work_dir) = @_;
     
     say "";
-    say "🎭 Starting Ansible post-provision verification (experimental)...";
+    say "🎭 Starting Ansible post-provision verification...";
     STDOUT->flush();
     
     # Set up Ansible working directory
@@ -386,7 +279,12 @@ sub _run_ansible_verification {
     # Run verification playbook
     $ansible->run_verification($ansible_dir);
     
+    # Final completion message
     say "";
+    say "✅ Provisioning completed successfully!";
+    say "VM is ready at IP: $vm_ip";
+    say "You can connect using: ssh -i ~/.ssh/testing_rsa torrust@$vm_ip";
+    STDOUT->flush();
 }
 
 1;
