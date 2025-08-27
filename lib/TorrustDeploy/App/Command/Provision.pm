@@ -55,6 +55,7 @@ sub execute {
     
     # Get VM IP address
     my $vm_ip = $tofu->get_vm_ip($tofu_dir);
+    STDOUT->flush();
     
     # Create SSH connection
     my $ssh_connection = TorrustDeploy::Infrastructure::SSH::Connection->new(host => $vm_ip);
@@ -64,6 +65,13 @@ sub execute {
     
     # Run Ansible post-provision verification
     $self->_run_ansible_verification($vm_ip, $work_dir);
+
+    # Final completion message
+    say "";
+    say "✅ Provisioning completed successfully!";
+    say "VM is ready at IP: " . $vm_ip;
+    say "You can connect using: ssh -i ~/.ssh/testing_rsa torrust@" . $vm_ip;
+    STDOUT->flush();
 }
 
 sub _copy_templates {
@@ -278,13 +286,6 @@ sub _run_ansible_verification {
     
     # Run verification playbook
     $ansible->run_verification($ansible_dir);
-    
-    # Final completion message
-    say "";
-    say "✅ Provisioning completed successfully!";
-    say "VM is ready at IP: $vm_ip";
-    say "You can connect using: ssh -i ~/.ssh/testing_rsa torrust@$vm_ip";
-    STDOUT->flush();
 }
 
 1;

@@ -127,8 +127,8 @@ subtest 'provision command executes successfully' => sub {
     
     note "Provision command completed in ${duration} seconds";
     
-    # Show output summary in verbose mode
-    if ($ENV{TEST_VERBOSE} || $ENV{HARNESS_IS_VERBOSE}) {
+    # Show output summary in verbose mode or on failure
+    if ($ENV{TEST_VERBOSE} || $ENV{HARNESS_IS_VERBOSE} || $exit_code != 0) {
         note "Command output (last 50 lines):";
         my @output_lines = split /\n/, $output;
         my $start_line = @output_lines > 50 ? @output_lines - 50 : 0;
@@ -139,6 +139,16 @@ subtest 'provision command executes successfully' => sub {
     
     # Command should complete successfully
     is($exit_code, 0, 'provision command exits with status 0');
+    
+    # Show helpful message on failure
+    if ($exit_code != 0) {
+        note "Provision command failed with exit code: $exit_code";
+        note "Check the output above for details. Common issues:";
+        note "  - SSH connectivity problems";
+        note "  - Ansible execution failures";
+        note "  - VM creation timeouts";
+        note "  - Cloud-init completion issues";
+    }
     
     # Basic checks - we can't easily check output without complexity
     pass('provision command executed (use prove -v to see output)');
