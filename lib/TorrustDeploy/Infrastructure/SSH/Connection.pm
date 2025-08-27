@@ -77,6 +77,11 @@ has '_last_health_check' => (
     is => 'rw',
 );
 
+#==============================================================================
+# CONNECTION LIFECYCLE METHODS
+# Methods that manage the SSH2 connection state and lifecycle
+#==============================================================================
+
 sub _build__ssh2 {
     my ($self) = @_;
     
@@ -95,6 +100,11 @@ sub _build__ssh2 {
     
     return $ssh2;
 }
+
+#==============================================================================
+# HEALTH MONITORING METHODS
+# Methods that check and validate connection health
+#==============================================================================
 
 # Connection health and validation methods
 sub _is_connection_expired {
@@ -196,6 +206,11 @@ sub _read_health_check_output {
     return $output;
 }
 
+#==============================================================================
+# AUTHENTICATION METHODS  
+# Methods that handle SSH authentication (password and key-based)
+#==============================================================================
+
 sub test_password_connection {
     my ($self) = @_;
     
@@ -245,6 +260,11 @@ sub test_key_connection {
     
     return $result;
 }
+
+#==============================================================================
+# COMMAND EXECUTION METHODS
+# Methods that handle command execution orchestration and retry logic  
+#==============================================================================
 
 sub execute_command {
     my ($self, $command) = @_;
@@ -302,6 +322,11 @@ sub _execute_single_command {
     };
 }
 
+#==============================================================================
+# CHANNEL OPERATIONS
+# Methods that work directly with SSH channels for I/O operations
+#==============================================================================
+
 sub _create_command_channel {
     my ($self, $ssh2, $command) = @_;
     
@@ -349,6 +374,11 @@ sub _create_failure_result {
         exit_code => 255,
     };
 }
+
+#==============================================================================
+# UTILITY METHODS  
+# Helper methods and cleanup functions
+#==============================================================================
 
 sub execute_command_with_sudo {
     my ($self, $command) = @_;
