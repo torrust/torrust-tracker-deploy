@@ -130,7 +130,6 @@ subtest 'Helper methods' => sub {
     # Test private helper methods exist
     can_ok $ssh, '_ensure_authenticated';
     can_ok $ssh, '_find_public_key_path';
-    can_ok $ssh, '_read_channel_output';
     
     # Test public key path finding logic
     my $public_key_path = $ssh->_find_public_key_path();

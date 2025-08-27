@@ -3,6 +3,7 @@ package TorrustDeploy::Infrastructure::SSH::Connection;
 use v5.38;
 use Moo;
 use Net::SSH2;
+use TorrustDeploy::Infrastructure::SSH::Channel;
 use Carp qw(croak);
 use namespace::clean;
 
@@ -166,44 +167,20 @@ sub _execute_health_check_command {
     
     my $result = eval {
         my $ssh2 = $self->_ssh2;
-        my $channel = $ssh2->channel();
-        return 0 unless $channel;
+        my $raw_channel = $ssh2->channel();
+        return 0 unless $raw_channel;
         
-        return $self->_run_echo_health_check($channel);
+        # Wrap in our Channel wrapper with shorter timeout for health checks
+        my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+            channel => $raw_channel,
+            timeout => 5,  # 5 second timeout for health checks
+        );
+        
+        return $channel->health_check();
     };
     
     return 0 if $@ || !$result;
     return 1;
-}
-
-sub _run_echo_health_check {
-    my ($self, $channel) = @_;
-    
-    # Use a simple echo command as health check
-    my $test_command = 'echo "health_check"';
-    return 0 unless $channel->exec($test_command);
-    
-    my $output = $self->_read_health_check_output($channel);
-    $channel->close();
-    
-    return $output =~ /health_check/;
-}
-
-sub _read_health_check_output {
-    my ($self, $channel) = @_;
-    
-    my $output = '';
-    my $timeout = time() + 5;  # 5 second timeout for health check
-    
-    while (time() < $timeout) {
-        my $buffer;
-        my $bytes = $channel->read($buffer, 1024);
-        last if $bytes <= 0;
-        $output .= $buffer;
-        last if $output =~ /health_check/;
-    }
-    
-    return $output;
 }
 
 #==============================================================================
@@ -310,15 +287,21 @@ sub _execute_single_command {
     my ($self, $command) = @_;
     
     my $ssh2 = $self->_ssh2;
-    my $channel = $self->_create_command_channel($ssh2, $command);
+    my $raw_channel = $self->_create_raw_ssh_channel($ssh2);
     
-    my $output = $self->_read_channel_output($channel);
-    my $exit_code = $self->_get_command_exit_code($channel);
+    # Wrap the raw channel in our Channel wrapper
+    my $channel = TorrustDeploy::Infrastructure::SSH::Channel->new(
+        channel => $raw_channel,
+        timeout => $self->command_timeout,
+    );
+    
+    # Use the Channel wrapper for command execution
+    my $result = $channel->execute_command($command);
     
     return {
-        output => $output,
-        success => $exit_code == 0,
-        exit_code => $exit_code,
+        output => $result->{output},
+        success => $result->{exit_code} == 0,
+        exit_code => $result->{exit_code},
     };
 }
 
@@ -327,25 +310,14 @@ sub _execute_single_command {
 # Methods that work directly with SSH channels for I/O operations
 #==============================================================================
 
-sub _create_command_channel {
-    my ($self, $ssh2, $command) = @_;
+sub _create_raw_ssh_channel {
+    my ($self, $ssh2) = @_;
     
     my $channel = $ssh2->channel();
     croak "Failed to create channel: " . ($ssh2->error || 'Unknown error') 
         unless $channel;
     
-    croak "Failed to execute command '$command': " . ($ssh2->error || 'Unknown error')
-        unless $channel->exec($command);
-    
     return $channel;
-}
-
-sub _get_command_exit_code {
-    my ($self, $channel) = @_;
-    
-    $channel->wait_closed();
-    my $exit_code = $channel->exit_status();
-    return defined $exit_code ? $exit_code : 0;
 }
 
 sub _should_retry_command {
@@ -462,74 +434,6 @@ sub _find_public_key_path {
     # If no public key file found, try using the private key path
     # (some SSH implementations accept this)
     return $private_key;
-}
-
-sub _read_channel_output {
-    my ($self, $channel) = @_;
-    
-    $self->_setup_non_blocking_read($channel);
-    my $output = $self->_read_with_timeout($channel);
-    $output .= $self->_read_remaining_data($channel);
-    
-    return $output;
-}
-
-sub _setup_non_blocking_read {
-    my ($self, $channel) = @_;
-    
-    $channel->blocking(0);
-}
-
-sub _read_with_timeout {
-    my ($self, $channel) = @_;
-    
-    my $output = '';
-    my $start_time = time();
-    my $timeout = $self->command_timeout;
-    
-    while (time() - $start_time < $timeout) {
-        my $buffer = $self->_try_read_chunk($channel);
-        
-        if (defined $buffer && length($buffer) > 0) {
-            $output .= $buffer;
-            next;
-        }
-        
-        last if $channel->eof();
-        $self->_small_delay_to_prevent_busy_waiting();
-    }
-    
-    return $output;
-}
-
-sub _try_read_chunk {
-    my ($self, $channel) = @_;
-    
-    my $buffer;
-    my $bytes_read = $channel->read($buffer, 4096);
-    
-    return (defined $bytes_read && $bytes_read > 0) ? $buffer : undef;
-}
-
-sub _small_delay_to_prevent_busy_waiting {
-    my ($self) = @_;
-    
-    select(undef, undef, undef, 0.1);
-}
-
-sub _read_remaining_data {
-    my ($self, $channel) = @_;
-    
-    my $remaining_output = '';
-    
-    # Final blocking read to get any remaining data
-    $channel->blocking(1);
-    while (my $bytes_read = $channel->read(my $buffer, 4096)) {
-        last unless defined $bytes_read && $bytes_read > 0;
-        $remaining_output .= $buffer;
-    }
-    
-    return $remaining_output;
 }
 
 # Cleanup on destruction
