@@ -34,19 +34,13 @@ sub execute {
     
     say "Starting Torrust Tracker provisioning...";
     
-    # Set up working directories
+    # Set up build directory
     my $work_dir = path('build');
-    my $templates_dir = path('templates/provision');
+    
+    # Set up OpenTofu working directory and copy resolved templates
     my $tofu_dir = $work_dir->child('tofu');
-    
-    # Ensure tofu directory exists
-    $tofu_dir->mkpath unless $tofu_dir->exists;
-    
-    # Copy templates to working directory
-    $self->_copy_templates($templates_dir, $tofu_dir);
-    
-    # Create OpenTofu instance
     my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    $tofu->copy_templates($tofu_dir);
     
     # Initialize OpenTofu
     $tofu->init($tofu_dir);
@@ -58,7 +52,7 @@ sub execute {
     my $vm_ip = $tofu->get_vm_ip($tofu_dir);
     STDOUT->flush();
 
-    # Set up Ansible working directory and copy templates
+    # Set up Ansible working directory and copy resolved templates
     my $ansible_dir = $work_dir->child('ansible');
     my $ansible = TorrustDeploy::Provision::Ansible->new();
     $ansible->copy_templates_and_generate_inventory($vm_ip, $ansible_dir);
@@ -79,41 +73,6 @@ sub execute {
     say "You can connect using: ssh -i ~/.ssh/testing_rsa torrust@" . $vm_ip;
     say "VM has been restarted and is ready for production use!";
     STDOUT->flush();
-}
-
-sub _copy_templates {
-    my ($self, $templates_dir, $tofu_dir) = @_;
-    
-    say "Copying OpenTofu templates...";
-    
-    # Check if templates directory exists
-    unless ($templates_dir->exists) {
-        die "Templates directory not found: $templates_dir";
-    }
-    
-    # Copy main.tf template
-    my $main_tf_template = $templates_dir->child('tofu/providers/libvirt/main.tf');
-    my $main_tf_dest = $tofu_dir->child('main.tf');
-    
-    unless ($main_tf_template->exists) {
-        die "Template file not found: $main_tf_template";
-    }
-    
-    $main_tf_template->copy($main_tf_dest);
-    say "Copied: $main_tf_template -> $main_tf_dest";
-    
-    # Copy cloud-init.yml template
-    my $cloud_init_template = $templates_dir->child('cloud-init.yml');
-    my $cloud_init_dest = $tofu_dir->child('cloud-init.yml');
-    
-    unless ($cloud_init_template->exists) {
-        die "Template file not found: $cloud_init_template";
-    }
-    
-    $cloud_init_template->copy($cloud_init_dest);
-    say "Copied: $cloud_init_template -> $cloud_init_dest";
-    
-    say "Templates copied successfully.";
 }
 
 1;

@@ -3,6 +3,7 @@ package TorrustDeploy::Provision::OpenTofu;
 use v5.38;
 
 use JSON;
+use Path::Tiny qw(path);
 
 =head1 NAME
 
@@ -27,6 +28,54 @@ Create a new OpenTofu instance.
 sub new {
     my ($class) = @_;
     return bless {}, $class;
+}
+
+=head2 copy_templates
+
+Copy OpenTofu templates to the working directory.
+
+    $tofu->copy_templates($tofu_dir);
+
+=cut
+
+sub copy_templates {
+    my ($self, $tofu_dir) = @_;
+    
+    say "Copying OpenTofu templates...";
+    
+    # Ensure tofu directory exists
+    $tofu_dir->mkpath unless $tofu_dir->exists;
+    
+    my $templates_dir = path('templates/provision');
+    
+    # Check if templates directory exists
+    unless ($templates_dir->exists) {
+        die "Templates directory not found: $templates_dir";
+    }
+    
+    # Copy main.tf template
+    my $main_tf_template = $templates_dir->child('tofu/providers/libvirt/main.tf');
+    my $main_tf_dest = $tofu_dir->child('main.tf');
+    
+    unless ($main_tf_template->exists) {
+        die "Template file not found: $main_tf_template";
+    }
+    
+    $main_tf_template->copy($main_tf_dest);
+    say "Copied: $main_tf_template -> $main_tf_dest";
+    
+    # Copy cloud-init.yml template
+    my $cloud_init_template = $templates_dir->child('cloud-init.yml');
+    my $cloud_init_dest = $tofu_dir->child('cloud-init.yml');
+    
+    unless ($cloud_init_template->exists) {
+        die "Template file not found: $cloud_init_template";
+    }
+    
+    $cloud_init_template->copy($cloud_init_dest);
+    say "Copied: $cloud_init_template -> $cloud_init_dest";
+    
+    say "Templates copied successfully.";
 }
 
 =head2 init

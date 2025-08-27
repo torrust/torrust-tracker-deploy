@@ -86,9 +86,12 @@ subtest 'Provision command template copying functionality' => sub {
     $test_tofu_dir->mkpath;
     ok($test_tofu_dir->exists, 'Test tofu directory created');
     
-    # Test the actual _copy_templates method with both required parameters
+    # Test the OpenTofu copy_templates method since that's where it moved
+    require TorrustDeploy::Provision::OpenTofu;
+    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    
     eval {
-        $provision_cmd->_copy_templates($templates_dir, $test_tofu_dir);
+        $tofu->copy_templates($test_tofu_dir);
     };
     ok(!$@, 'Template copying method executes without error') or diag("Error: $@");
     
@@ -113,12 +116,10 @@ subtest 'Provision command internal methods' => sub {
         app => $app,
     });
     
-    # Test that the command has the expected private methods
-    ok($provision_cmd->can('_copy_templates'), 'Provision command has _copy_templates method');
-    
     # Test that OpenTofu functionality is available via the OpenTofu package
     require TorrustDeploy::Provision::OpenTofu;
     my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    ok($tofu->can('copy_templates'), 'OpenTofu package has copy_templates method');
     ok($tofu->can('init'), 'OpenTofu package has init method');
     ok($tofu->can('apply'), 'OpenTofu package has apply method');
     ok($tofu->can('get_vm_ip'), 'OpenTofu package has get_vm_ip method');
