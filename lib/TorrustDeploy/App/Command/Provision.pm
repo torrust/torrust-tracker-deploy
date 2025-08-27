@@ -3,8 +3,8 @@ package TorrustDeploy::App::Command::Provision;
 use v5.38;
 
 use TorrustDeploy::App -command;
-use TorrustDeploy::Provision::OpenTofu;
-use TorrustDeploy::Provision::Ansible;
+use TorrustDeploy::OpenTofu;
+use TorrustDeploy::Ansible;
 use Path::Tiny qw(path);
 use File::Spec;
 use Time::HiRes qw(sleep);
@@ -39,7 +39,7 @@ sub execute {
     
     # Set up OpenTofu working directory and copy resolved templates
     my $tofu_dir = $work_dir->child('tofu');
-    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    my $tofu = TorrustDeploy::OpenTofu->new();
     $tofu->copy_templates($tofu_dir);
     
     # Initialize OpenTofu
@@ -54,7 +54,7 @@ sub execute {
 
     # Set up Ansible working directory and copy resolved templates
     my $ansible_dir = $work_dir->child('ansible');
-    my $ansible = TorrustDeploy::Provision::Ansible->new();
+    my $ansible = TorrustDeploy::Ansible->new();
     $ansible->copy_templates_and_generate_inventory($vm_ip, $ansible_dir);
 
     # Wait for cloud-init completion using Ansible

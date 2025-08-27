@@ -1,4 +1,4 @@
-package TorrustDeploy::Provision::OpenTofu;
+package TorrustDeploy::OpenTofu;
 
 use v5.38;
 
@@ -7,7 +7,7 @@ use Path::Tiny qw(path);
 
 =head1 NAME
 
-TorrustDeploy::Provision::OpenTofu - OpenTofu command wrapper for Torrust deployment
+TorrustDeploy::OpenTofu - OpenTofu command wrapper for Torrust deployment
 
 =head1 DESCRIPTION
 

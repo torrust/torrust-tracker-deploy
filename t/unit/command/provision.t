@@ -87,8 +87,8 @@ subtest 'Provision command template copying functionality' => sub {
     ok($test_tofu_dir->exists, 'Test tofu directory created');
     
     # Test the OpenTofu copy_templates method since that's where it moved
-    require TorrustDeploy::Provision::OpenTofu;
-    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    require TorrustDeploy::OpenTofu;
+    my $tofu = TorrustDeploy::OpenTofu->new();
     
     eval {
         $tofu->copy_templates($test_tofu_dir);
@@ -117,8 +117,8 @@ subtest 'Provision command internal methods' => sub {
     });
     
     # Test that OpenTofu functionality is available via the OpenTofu package
-    require TorrustDeploy::Provision::OpenTofu;
-    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    require TorrustDeploy::OpenTofu;
+    my $tofu = TorrustDeploy::OpenTofu->new();
     ok($tofu->can('copy_templates'), 'OpenTofu package has copy_templates method');
     ok($tofu->can('init'), 'OpenTofu package has init method');
     ok($tofu->can('apply'), 'OpenTofu package has apply method');

@@ -1,4 +1,4 @@
-package TorrustDeploy::Provision::Ansible;
+package TorrustDeploy::Ansible;
 
 use v5.38;
 
@@ -6,7 +6,7 @@ use Path::Tiny qw(path);
 
 =head1 NAME
 
-TorrustDeploy::Provision::Ansible - Ansible command wrapper for Torrust deployment
+TorrustDeploy::Ansible - Ansible command wrapper for Torrust deployment
 
 =head1 DESCRIPTION
 

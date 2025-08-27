@@ -4,24 +4,24 @@ use lib "$Bin/../../../lib";
 use Path::Tiny qw(path);
 use File::Temp qw(tempdir);
 
-use TorrustDeploy::Provision::OpenTofu;
+use TorrustDeploy::OpenTofu;
 
 subtest 'OpenTofu module loads correctly' => sub {
-    ok(TorrustDeploy::Provision::OpenTofu->can('new'), 'OpenTofu has new method');
-    ok(TorrustDeploy::Provision::OpenTofu->can('copy_templates'), 'OpenTofu has copy_templates method');
-    ok(TorrustDeploy::Provision::OpenTofu->can('init'), 'OpenTofu has init method');
-    ok(TorrustDeploy::Provision::OpenTofu->can('apply'), 'OpenTofu has apply method');
-    ok(TorrustDeploy::Provision::OpenTofu->can('get_vm_ip'), 'OpenTofu has get_vm_ip method');
+    ok(TorrustDeploy::OpenTofu->can('new'), 'OpenTofu has new method');
+    ok(TorrustDeploy::OpenTofu->can('copy_templates'), 'OpenTofu has copy_templates method');
+    ok(TorrustDeploy::OpenTofu->can('init'), 'OpenTofu has init method');
+    ok(TorrustDeploy::OpenTofu->can('apply'), 'OpenTofu has apply method');
+    ok(TorrustDeploy::OpenTofu->can('get_vm_ip'), 'OpenTofu has get_vm_ip method');
 };
 
 subtest 'OpenTofu instance creation' => sub {
-    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    my $tofu = TorrustDeploy::OpenTofu->new();
     ok($tofu, 'OpenTofu instance created successfully');
-    isa_ok($tofu, 'TorrustDeploy::Provision::OpenTofu');
+    isa_ok($tofu, 'TorrustDeploy::OpenTofu');
 };
 
 subtest 'OpenTofu template copying functionality' => sub {
-    my $tofu = TorrustDeploy::Provision::OpenTofu->new();
+    my $tofu = TorrustDeploy::OpenTofu->new();
     
     # Create temporary directory for testing
     my $temp_dir = tempdir(CLEANUP => 1);
