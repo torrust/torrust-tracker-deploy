@@ -85,7 +85,14 @@ fi
 # Run tests if any directories are selected
 if [ ${#test_dirs[@]} -gt 0 ]; then
     echo "Running tests in: ${test_dirs[*]}"
-    exec carmel exec -- prove -l "${test_dirs[@]}" --ext .t --recurse
+    
+    # Use verbose mode for E2E tests to show real-time output
+    if [ "$run_e2e" = true ] && [ ${#test_dirs[@]} -eq 1 ]; then
+        echo "Using verbose mode for E2E tests to show real-time output..."
+        exec carmel exec -- prove -lv "${test_dirs[@]}" --ext .t --recurse
+    else
+        exec carmel exec -- prove -l "${test_dirs[@]}" --ext .t --recurse
+    fi
 else
     echo "No test suites selected"
     exit 1
