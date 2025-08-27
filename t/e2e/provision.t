@@ -112,18 +112,30 @@ subtest 'provision command executes successfully' => sub {
     my $timeout = $ENV{E2E_TIMEOUT} || 480; # 8 minutes default, configurable
     
     # Run command with timeout using carmel exec for proper dependencies
-    my $cmd = "timeout ${timeout}s carmel exec -- $^X -Ilib bin/torrust-deploy provision";
-    my $exit_code = system($cmd);
+    # Capture output to prevent Ansible "ok:" lines from being interpreted as TAP output
+    my $cmd = "timeout ${timeout}s carmel exec -- $^X -Ilib bin/torrust-deploy provision 2>&1";
+    my $output = `$cmd`;
+    my $exit_code = $? >> 8;
     my $duration = time() - $start_time;
     
     # Check if command timed out
-    if ($exit_code == 124 * 256) { # timeout command exit code
+    if ($exit_code == 124) { # timeout command exit code
         fail("Provision command timed out after ${timeout} seconds");
         note "Consider increasing timeout with E2E_TIMEOUT environment variable";
         return;
     }
     
     note "Provision command completed in ${duration} seconds";
+    
+    # Show output summary in verbose mode
+    if ($ENV{TEST_VERBOSE} || $ENV{HARNESS_IS_VERBOSE}) {
+        note "Command output (last 50 lines):";
+        my @output_lines = split /\n/, $output;
+        my $start_line = @output_lines > 50 ? @output_lines - 50 : 0;
+        for my $i ($start_line .. $#output_lines) {
+            note "  $output_lines[$i]";
+        }
+    }
     
     # Command should complete successfully
     is($exit_code, 0, 'provision command exits with status 0');

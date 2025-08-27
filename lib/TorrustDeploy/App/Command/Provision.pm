@@ -4,6 +4,7 @@ use v5.38;
 
 use TorrustDeploy::App -command;
 use TorrustDeploy::Provision::OpenTofu;
+use TorrustDeploy::Provision::Ansible;
 use TorrustDeploy::Infrastructure::SSH::Connection;
 use Path::Tiny qw(path);
 use File::Spec;
@@ -68,6 +69,9 @@ sub execute {
     
     # Verify SSH key authentication after cloud-init completes
     $self->_verify_ssh_key_auth($ssh_connection);
+    
+    # Run Ansible post-provision verification (experimental)
+    $self->_run_ansible_verification($vm_ip, $work_dir);
     
     # Show final summary
     $self->_show_final_summary($ssh_connection);
@@ -365,6 +369,26 @@ sub _verify_ssh_key_auth {
     die "SSH key authentication failed";
 }
 
+sub _run_ansible_verification {
+    my ($self, $vm_ip, $work_dir) = @_;
+    
+    say "";
+    say "🎭 Starting Ansible post-provision verification (experimental)...";
+    STDOUT->flush();
+    
+    # Set up Ansible working directory
+    my $ansible_dir = $work_dir->child('ansible');
+    
+    # Create Ansible instance and set up configuration
+    my $ansible = TorrustDeploy::Provision::Ansible->new();
+    $ansible->copy_templates_and_generate_inventory($vm_ip, $ansible_dir);
+    
+    # Run verification playbook
+    $ansible->run_verification($ansible_dir);
+    
+    say "";
+}
+
 1;
 
 __END__
@@ -386,11 +410,12 @@ completion via SSH.
 =head1 REQUIREMENTS
 
 - OpenTofu installed
+- Ansible installed
 - libvirt/KVM installed and running
 - qemu-system-x86_64
 - sshpass installed (for password authentication during cloud-init monitoring)
 - Testing SSH key pair (~/.ssh/testing_rsa)
 - Default libvirt storage pool configured
-- Template files in templates/ directory (main.tf, cloud-init.yml)
+- Template files in templates/ directory (main.tf, cloud-init.yml, ansible/)
 
 =cut
