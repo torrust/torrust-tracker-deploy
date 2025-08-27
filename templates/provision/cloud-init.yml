@@ -148,11 +148,6 @@ runcmd:
   # Set up log rotation for Docker
   - systemctl restart docker
 
-  # Create completion marker for robust cloud-init status detection
-  # This file indicates that ALL cloud-init setup tasks have completed successfully
-  - echo "Cloud-init setup completed at $(date)" > /var/lib/cloud/torrust-setup-complete
-  - chmod 644 /var/lib/cloud/torrust-setup-complete
-
 # Final message
 final_message: |
   Torrust Tracker VM setup completed!
@@ -169,10 +164,4 @@ final_message: |
   - Password must be disabled for security
 
   The VM is ready for Torrust Tracker deployment!
-
-# Power state - reboot after setup
-power_state:
-  mode: reboot
-  message: "Rebooting after initial setup"
-  timeout: 60
-  condition: true
+  Cloud-init will complete without reboot - Ansible will handle the restart.

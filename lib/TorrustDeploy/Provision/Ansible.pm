@@ -63,16 +63,24 @@ sub copy_templates_and_generate_inventory {
     $ansible_cfg_template->copy($ansible_cfg_dest);
     say "Copied: $ansible_cfg_template -> $ansible_cfg_dest";
     
-    # Copy playbooks
-    my $verification_template = $templates_dir->child('post-provision-verification.yml');
-    my $verification_dest = $ansible_dir->child('post-provision-verification.yml');
+    # Copy all playbooks
+    my @playbooks = (
+        'wait-for-cloud-init.yml',
+        'post-provision-verification.yml',
+        'restart-vm.yml'
+    );
     
-    unless ($verification_template->exists) {
-        die "Verification playbook template not found: $verification_template";
+    for my $playbook (@playbooks) {
+        my $template = $templates_dir->child($playbook);
+        my $dest = $ansible_dir->child($playbook);
+        
+        unless ($template->exists) {
+            die "Playbook template not found: $template";
+        }
+        
+        $template->copy($dest);
+        say "Copied: $template -> $dest";
     }
-    
-    $verification_template->copy($verification_dest);
-    say "Copied: $verification_template -> $verification_dest";
     
     # Generate inventory with VM IP
     my $inventory_template = $templates_dir->child('inventory.ini.template');
@@ -91,6 +99,31 @@ sub copy_templates_and_generate_inventory {
     say "Generated inventory: $inventory_dest (VM IP: $vm_ip)";
     
     say "Ansible setup completed successfully.";
+}
+
+=head2 wait_for_cloud_init
+
+Wait for cloud-init completion using Ansible playbook.
+
+    $ansible->wait_for_cloud_init($ansible_dir);
+
+=cut
+
+sub wait_for_cloud_init {
+    my ($self, $ansible_dir) = @_;
+    
+    say "⏳ Waiting for cloud-init completion using Ansible...";
+    STDOUT->flush();
+    
+    # Change to ansible directory and run cloud-init wait playbook
+    my $result = system("cd '$ansible_dir' && ansible-playbook -i inventory.ini wait-for-cloud-init.yml");
+    
+    if ($result != 0) {
+        die "Ansible cloud-init wait failed with exit code: $result";
+    }
+    
+    say "✅ Cloud-init completion verified via Ansible!";
+    STDOUT->flush();
 }
 
 =head2 run_verification
@@ -115,6 +148,31 @@ sub run_verification {
     }
     
     say "✅ Ansible verification completed successfully!";
+    STDOUT->flush();
+}
+
+=head2 restart_vm
+
+Restart the VM after post-provision verification.
+
+    $ansible->restart_vm($ansible_dir);
+
+=cut
+
+sub restart_vm {
+    my ($self, $ansible_dir) = @_;
+    
+    say "🔄 Restarting VM using Ansible...";
+    STDOUT->flush();
+    
+    # Change to ansible directory and run restart playbook
+    my $result = system("cd '$ansible_dir' && ansible-playbook -i inventory.ini restart-vm.yml");
+    
+    if ($result != 0) {
+        die "Ansible VM restart failed with exit code: $result";
+    }
+    
+    say "✅ VM restart completed successfully!";
     STDOUT->flush();
 }
 

@@ -1,0 +1,49 @@
+---
+# Wait for cloud-init completion playbook for Torrust VM
+# This playbook waits for cloud-init to complete using Ansible's native capabilities
+
+- name: Wait for Cloud-Init Completion
+  hosts: torrust_vm
+  gather_facts: no
+  become: no
+
+  tasks:
+    - name: Wait for SSH connection to be available
+      wait_for_connection:
+        delay: 10
+        timeout: 600
+        sleep: 5
+      register: ssh_connection_result
+
+    - name: Display SSH connection result
+      debug:
+        msg: "✅ SSH connection established to {{ inventory_hostname }}"
+
+    - name: Wait for cloud-init to finish
+      command: cloud-init status --wait
+      register: cloud_init_result
+      changed_when: false
+      timeout: 1800 # 30 minutes
+
+    - name: Display cloud-init completion status
+      debug:
+        msg: "✅ Cloud-init completed successfully on {{ inventory_hostname }}"
+      when: cloud_init_result.rc == 0
+
+    - name: Display cloud-init status details
+      debug:
+        msg: "Cloud-init status: {{ cloud_init_result.stdout }}"
+      when: cloud_init_result.rc == 0
+
+    - name: Fail if cloud-init did not complete successfully
+      fail:
+        msg: "Cloud-init failed to complete successfully: {{ cloud_init_result.stderr }}"
+      when: cloud_init_result.rc != 0
+
+    - name: Display completion message
+      debug:
+        msg: |
+          📦 Cloud-init completion verified:
+          - SSH connectivity: ✅
+          - Cloud-init status: ✅
+          - VM is ready for post-provision verification

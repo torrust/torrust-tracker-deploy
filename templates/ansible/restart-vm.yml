@@ -1,0 +1,52 @@
+---
+# VM restart playbook for Torrust VM
+# This playbook restarts the VM after post-provision verification is complete
+
+- name: Restart VM After Post-Provision Verification
+  hosts: torrust_vm
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Display restart message
+      debug:
+        msg: "🔄 Initiating VM restart after successful post-provision verification"
+
+    - name: Restart the VM
+      reboot:
+        msg: "VM restart after post-provision verification and cloud-init completion"
+        pre_reboot_delay: 5
+        post_reboot_delay: 30
+        reboot_timeout: 300
+        connect_timeout: 20
+        test_command: uptime
+      register: reboot_result
+
+    - name: Verify VM is back online
+      wait_for_connection:
+        delay: 5
+        timeout: 300
+        sleep: 10
+
+    - name: Display restart completion
+      debug:
+        msg: |
+          ✅ VM restart completed successfully:
+          - VM rebooted cleanly
+          - SSH connectivity restored
+          - System is ready for production use
+
+    - name: Gather post-restart system facts
+      setup:
+      register: post_restart_facts
+
+    - name: Display post-restart system summary
+      debug:
+        msg: |
+          📦 Post-Restart System Status:
+          - Hostname: {{ ansible_hostname }}
+          - IP: {{ ansible_default_ipv4.address }}
+          - Uptime: {{ ansible_uptime_seconds }}s
+          - Memory: {{ ansible_memtotal_mb }}MB
+          - Load Average: {{ ansible_loadavg['1m'] }}
+          - VM is ready for Torrust Tracker deployment

@@ -23,6 +23,7 @@ keygen
 keyrings
 libssh
 libvirtd
+loadavg
 LOGLEVEL
 memtotal
 mkpath
