@@ -1,0 +1,53 @@
+---
+# Post-provision verification playbook for Torrust VM
+# This playbook performs comprehensive verification of VM readiness after OpenTofu provisioning
+
+- name: Post-Provision Verification for Torrust VM
+  hosts: torrust_vm
+  gather_facts: yes
+  become: no
+
+  tasks:
+    - name: Test SSH connectivity with ping
+      ping:
+      register: ssh_test
+
+    - name: Display SSH connectivity result
+      debug:
+        msg: "✅ SSH key authentication successful to {{ inventory_hostname }}"
+      when: ssh_test is succeeded
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+      failed_when: false
+
+    - name: Display Docker status
+      debug:
+        msg: "Docker: {{ docker_version.stdout if docker_version.rc == 0 else 'Not available' }}"
+
+    - name: Check firewall status
+      command: sudo ufw status
+      register: ufw_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display firewall status
+      debug:
+        msg: "Firewall: {{ ufw_status.stdout_lines[0] if ufw_status.rc == 0 else 'UFW not available' }}"
+
+    - name: Gather system facts
+      setup:
+      register: system_facts
+
+    - name: Display system summary
+      debug:
+        msg: |
+          📦 System Summary via Ansible:
+          - OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          - Hostname: {{ ansible_hostname }}
+          - IP: {{ ansible_default_ipv4.address }}
+          - Architecture: {{ ansible_architecture }}
+          - Memory: {{ ansible_memtotal_mb }}MB
+          - CPUs: {{ ansible_processor_vcpus }}

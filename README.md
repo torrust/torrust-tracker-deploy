@@ -45,7 +45,7 @@ First, install system dependencies:
 
 ```bash
 # On Ubuntu/Debian:
-sudo apt install libssh2-1-dev
+sudo apt install libssh2-1-dev ansible
 ```
 
 Install cpanminus:
@@ -105,13 +105,26 @@ This command will:
 1. Copy OpenTofu configuration templates from `templates/provision/` directory
 2. Initialize OpenTofu if needed
 3. Create a minimal Ubuntu 22.04 LTS VM with hardcoded configuration
-4. Start the VM and make it ready for use
+4. Wait for cloud-init completion via SSH monitoring
+5. Verify SSH key authentication and system readiness
+6. Run post-provision verification using Ansible (experimental)
+7. Display final system summary
 
 #### Requirements
 
 Before using the provision command, ensure you have:
 
 - **OpenTofu** installed ([Download from opentofu.org](https://opentofu.org/docs/intro/install/))
+- **Ansible** installed for post-provision verification and configuration:
+
+  ```bash
+  # On Ubuntu/Debian:
+  sudo apt install ansible
+
+  # Verify installation:
+  ansible --version
+  ```
+
 - **libvirt/KVM** installed and running:
 
   ```bash
@@ -200,6 +213,7 @@ Run end-to-end tests that require local virtualization support:
 
 - Local machine with KVM/libvirt support
 - OpenTofu installed
+- Ansible installed
 - Required system tools: `qemu-system-x86_64`, `sshpass`
 - SSH development libraries: `libssh2-1-dev`
 - Cannot run in CI environments

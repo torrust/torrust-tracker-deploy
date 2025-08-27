@@ -24,6 +24,7 @@ keyrings
 libssh
 libvirtd
 LOGLEVEL
+memtotal
 mkpath
 Mlocal
 netdev
@@ -50,6 +51,7 @@ tfstate
 Undefining
 usermod
 vcpu
+vcpus
 virsh
 virtio
 wmem

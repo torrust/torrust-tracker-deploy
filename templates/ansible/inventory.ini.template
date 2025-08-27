@@ -1,0 +1,8 @@
+# Ansible inventory template for Torrust VM
+# VM_IP will be replaced with actual IP during provisioning
+
+[torrust_vm]
+{{VM_IP}} ansible_user=torrust ansible_ssh_private_key_file=~/.ssh/testing_rsa
+
+[torrust_vm:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
