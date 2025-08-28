@@ -31,13 +31,13 @@ subtest 'Provision command is discoverable by app' => sub {
 
 subtest 'Template files exist and are readable' => sub {
     my $project_root = path($Bin)->parent->parent->parent;
-    my $templates_dir = $project_root->child('templates/provision');
+    my $templates_dir = $project_root->child('templates');
     
-    ok($templates_dir->exists, 'Templates/provision directory exists');
-    ok($templates_dir->is_dir, 'Templates/provision directory is a directory');
+    ok($templates_dir->exists, 'Templates directory exists');
+    ok($templates_dir->is_dir, 'Templates directory is a directory');
     
     my $main_tf_template = $templates_dir->child('tofu/providers/libvirt/main.tf');
-    my $cloud_init_template = $templates_dir->child('cloud-init.yml');
+    my $cloud_init_template = $templates_dir->child('tofu/cloud-init.yml');
     
     ok($main_tf_template->exists, 'main.tf template exists');
     ok($main_tf_template->is_file, 'main.tf template is a file');
@@ -50,7 +50,7 @@ subtest 'Template files exist and are readable' => sub {
 
 subtest 'Template files have expected content' => sub {
     my $project_root = path($Bin)->parent->parent->parent;
-    my $templates_dir = $project_root->child('templates/provision');
+    my $templates_dir = $project_root->child('templates');
     
     my $main_tf_content = $templates_dir->child('tofu/providers/libvirt/main.tf')->slurp_utf8;
     like($main_tf_content, qr/required_providers/, 'main.tf contains provider configuration');
@@ -58,7 +58,7 @@ subtest 'Template files have expected content' => sub {
     like($main_tf_content, qr/libvirt_domain/, 'main.tf contains domain resource');
     like($main_tf_content, qr/torrust-tracker/, 'main.tf contains torrust-tracker VM name');
     
-    my $cloud_init_content = $templates_dir->child('cloud-init.yml')->slurp_utf8;
+    my $cloud_init_content = $templates_dir->child('tofu/cloud-init.yml')->slurp_utf8;
     like($cloud_init_content, qr/^#cloud-config/, 'cloud-init.yml has cloud-config header');
     like($cloud_init_content, qr/hostname:\s*torrust-tracker/, 'cloud-init.yml sets hostname');
     like($cloud_init_content, qr/name:\s*torrust/, 'cloud-init.yml creates torrust user');
@@ -77,10 +77,10 @@ subtest 'Provision command template copying functionality' => sub {
     
     # Test the _copy_templates method directly
     my $project_root = path($Bin)->parent->parent->parent;
-    my $templates_dir = $project_root->child('templates/provision');
+    my $templates_dir = $project_root->child('templates');
     
     # Test that template directory exists
-    ok($templates_dir->exists, 'Source templates/provision directory exists');
+    ok($templates_dir->exists, 'Source templates directory exists');
     
     # Create the target directory
     $test_tofu_dir->mkpath;
@@ -104,7 +104,7 @@ subtest 'Provision command template copying functionality' => sub {
     
     # Verify content matches the templates
     my $main_tf_template = $templates_dir->child('tofu/providers/libvirt/main.tf');
-    my $cloud_init_template = $templates_dir->child('cloud-init.yml');
+    my $cloud_init_template = $templates_dir->child('tofu/cloud-init.yml');
     
     is($target_main_tf->slurp_utf8, $main_tf_template->slurp_utf8, 'main.tf content matches template');
     is($target_cloud_init->slurp_utf8, $cloud_init_template->slurp_utf8, 'cloud-init.yml content matches template');

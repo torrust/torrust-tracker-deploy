@@ -46,7 +46,7 @@ sub copy_templates {
     # Ensure tofu directory exists
     $tofu_dir->mkpath unless $tofu_dir->exists;
     
-    my $templates_dir = path('templates/provision');
+    my $templates_dir = path('templates');
     
     # Check if templates directory exists
     unless ($templates_dir->exists) {
@@ -65,7 +65,7 @@ sub copy_templates {
     say "Copied: $main_tf_template -> $main_tf_dest";
     
     # Copy cloud-init.yml template
-    my $cloud_init_template = $templates_dir->child('cloud-init.yml');
+    my $cloud_init_template = $templates_dir->child('tofu/cloud-init.yml');
     my $cloud_init_dest = $tofu_dir->child('cloud-init.yml');
     
     unless ($cloud_init_template->exists) {

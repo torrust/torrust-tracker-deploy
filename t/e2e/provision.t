@@ -98,8 +98,8 @@ subtest 'cleanup leftover resources from previous runs' => sub {
 };
 
 # Ensure we have required templates
-ok(-f 'templates/provision/tofu/providers/libvirt/main.tf', 'Required OpenTofu template exists');
-ok(-f 'templates/provision/cloud-init.yml', 'Required cloud-init template exists');
+ok(-f 'templates/tofu/providers/libvirt/main.tf', 'Required OpenTofu template exists');
+ok(-f 'templates/tofu/cloud-init.yml', 'Required cloud-init template exists');
 
 subtest 'provision command executes successfully' => sub {
     plan tests => 3;

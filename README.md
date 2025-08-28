@@ -102,7 +102,7 @@ carmel exec -- ./bin/torrust-deploy provision
 
 This command will:
 
-1. Copy OpenTofu configuration templates from `templates/provision/` directory
+1. Copy OpenTofu configuration templates from `templates/tofu/` directory
 2. Initialize OpenTofu if needed
 3. Create a minimal Ubuntu 22.04 LTS VM with hardcoded configuration
 4. Wait for cloud-init completion via SSH monitoring

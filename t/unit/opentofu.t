@@ -29,7 +29,7 @@ subtest 'OpenTofu template copying functionality' => sub {
     $test_tofu_dir->mkpath;
     
     # Verify templates directory exists before testing
-    my $templates_dir = path('templates/provision');
+    my $templates_dir = path('templates');
     skip_all "Templates directory not found: $templates_dir" unless $templates_dir->exists;
     
     # Test the copy_templates method
@@ -47,7 +47,7 @@ subtest 'OpenTofu template copying functionality' => sub {
     
     # Verify content matches the templates if templates exist
     my $main_tf_template = $templates_dir->child('tofu/providers/libvirt/main.tf');
-    my $cloud_init_template = $templates_dir->child('cloud-init.yml');
+    my $cloud_init_template = $templates_dir->child('tofu/cloud-init.yml');
     
     if ($main_tf_template->exists && $cloud_init_template->exists) {
         is($target_main_tf->slurp_utf8, $main_tf_template->slurp_utf8, 'main.tf content matches template');
