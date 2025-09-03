@@ -1,4 +1,4 @@
-[![Testing](https://github.com/torrust/torrust-tracker-deploy/actions/workflows/testing.yml/badge.svg)](https://github.com/torrust/torrust-tracker-deploy/actions/workflows/testing.yml)
+[![Testing](https://github.com/torrust/torrust-tracker-deploy-perl-poc/actions/workflows/testing.yml/badge.svg)](https://github.com/torrust/torrust-tracker-deploy-perl-poc/actions/workflows/testing.yml)
 
 # Torrust Tracker Deployment Tool
 
