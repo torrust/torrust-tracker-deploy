@@ -1,6 +1,63 @@
 [![Testing](https://github.com/torrust/torrust-tracker-deploy-perl-poc/actions/workflows/testing.yml/badge.svg)](https://github.com/torrust/torrust-tracker-deploy-perl-poc/actions/workflows/testing.yml)
 
-# Torrust Tracker Deployment Tool
+# Torrust Tracker Deploy - Perl PoC (Historical)
+
+> ⚠️ **PROOF OF CONCEPT - HISTORICAL REFERENCE ONLY**
+>
+> This repository contains the second proof of concept for Torrust Tracker deployment infrastructure.
+> It is **no longer actively developed** and exists only as a historical reference.
+>
+> **👉 For production use, see [Torrust Tracker Deployer](https://github.com/torrust/torrust-tracker-deployer)**
+>
+> ---
+
+## Purpose
+
+This was the second proof of concept in a series exploring deployment automation for the Torrust Tracker:
+
+1. **[Bash/OpenTofu/cloud-init PoC](https://github.com/torrust/torrust-tracker-deploy-bash-poc)**
+
+   - **Technologies**: Bash scripts, OpenTofu, cloud-init, Docker Compose
+   - **Focus**: Infrastructure as Code with libvirt/KVM and cloud deployment
+   - **Status**: ✅ Historical reference - Completed its research goals
+
+2. **[Perl/Ansible PoC](https://github.com/torrust/torrust-tracker-deploy-perl-poc)** (this repository)
+
+   - **Technologies**: Perl, OpenTofu, Ansible, libvirt/KVM, cloud-init, Docker Compose
+   - **Focus**: Declarative configuration management with mature automation tools
+   - **Status**: ✅ Historical reference - Completed its research goals
+
+3. **[Torrust Tracker Deployer](https://github.com/torrust/torrust-tracker-deployer)** (production)
+   - **Technologies**: Rust, OpenTofu, Ansible, LXD, cloud-init, Docker Compose
+   - **Focus**: Type-safe, performance-oriented deployment tooling
+   - **Status**: 🚀 Production-ready - Active development
+
+## What We Learned
+
+This proof of concept successfully validated:
+
+- ✅ Ansible for declarative configuration management
+- ✅ Perl as a viable deployment scripting language
+- ✅ Integration of OpenTofu with configuration management tools
+- ✅ Structured approach to deployment orchestration
+- ✅ Importance of type safety and testing infrastructure
+
+These learnings directly influenced the production Torrust Tracker Deployer's architecture.
+
+## Migration Path
+
+If you're using this PoC, migrate to the production [Torrust Tracker Deployer](https://github.com/torrust/torrust-tracker-deployer):
+
+1. Review the [Torrust Tracker Deployer README](https://github.com/torrust/torrust-tracker-deployer#readme)
+2. Check the [migration guide](https://github.com/torrust/torrust-tracker-deployer/docs/migration-from-pocs.md)
+   (if available)
+3. Open an [issue](https://github.com/torrust/torrust-tracker-deployer/issues) if you need assistance
+
+---
+
+## Original PoC Documentation
+
+### Torrust Tracker Deployment Tool
 
 A modern Perl console application for deploying Torrust Tracker to cloud providers using
 OpenTofu/Terraform and cloud-init for VM configuration.
